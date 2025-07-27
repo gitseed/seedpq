@@ -58,15 +58,15 @@ impl Future for PendingConnection {
         let status: libpq::PostgresPollingStatusType = unsafe { libpq::PQconnectPoll(self.conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
             self.waker_send.send(None).unwrap();
-            return std::task::Poll::Ready(Ok(Connection {
+            std::task::Poll::Ready(Ok(Connection {
                 conn: self.conn
             }))
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
             self.waker_send.send(None).unwrap();
-            return std::task::Poll::Ready(Err(get_connection_error(self.conn)));
+            std::task::Poll::Ready(Err(get_connection_error(self.conn)))
         } else {
             self.waker_send.send(Some(cx.waker().clone())).unwrap();
-            return std::task::Poll::Pending
+            std::task::Poll::Pending
         }
     }
 }
