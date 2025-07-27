@@ -1,10 +1,13 @@
+use std::sync::mpsc;
+
 use crate::libpq;
 pub struct Connection {
     conn: *mut libpq::PGconn
 }
 
 pub struct PendingConnection {
-    conn: *mut libpq::PGconn
+    conn: *mut libpq::PGconn,
+    waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>
 }
 
 #[derive(Debug)]
@@ -19,7 +22,22 @@ impl Connection {
             .expect("Postgres connection info should not contain internal null characters")
             .into_raw();
         let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
-        PendingConnection { conn }
+
+        let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
+
+        std::thread::spawn(move || {
+            loop {
+                match waker_receive.recv().unwrap() {
+                    None => return,
+                    Some(s) => {
+                        std::thread::sleep(std::time::Duration::from_secs(2));
+                        s.wake();
+                    }
+                }
+            }
+        });
+
+        PendingConnection { conn, waker_send }
     }
 
     pub fn server_version(&mut self) -> i64 {
@@ -36,16 +54,18 @@ impl Drop for Connection {
 impl Future for PendingConnection {
     type Output = Result<Connection, ConnectionError>;
 
-    // TODO: Probably important to use cx, probably things won't wake
-    fn poll(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
         let status: libpq::PostgresPollingStatusType = unsafe { libpq::PQconnectPoll(self.conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
+            self.waker_send.send(None).unwrap();
             return std::task::Poll::Ready(Ok(Connection {
                 conn: self.conn
             }))
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
+            self.waker_send.send(None).unwrap();
             return std::task::Poll::Ready(Err(get_connection_error(self.conn)));
         } else {
+            self.waker_send.send(Some(cx.waker().clone())).unwrap();
             return std::task::Poll::Pending
         }
     }
