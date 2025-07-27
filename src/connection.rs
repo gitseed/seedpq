@@ -25,14 +25,9 @@ impl Connection {
         let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
         let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
         std::thread::spawn(move || {
-            loop {
-                match waker_receive.recv().unwrap() {
-                    None => return,
-                    Some(s) => {
-                        std::thread::sleep(std::time::Duration::from_secs(2));
-                        s.wake();
-                    }
-                }
+            while let Some(s) = waker_receive.recv().unwrap() {
+                std::thread::sleep(std::time::Duration::from_secs(2));
+                s.wake();
             }
         });
         PendingConnection { conn, waker_send }
