@@ -17,6 +17,7 @@ fn main() {
         .default_enum_style(bindgen::EnumVariation::Rust {
             non_exhaustive: true,
         })
+        .ctypes_prefix("::std::ffi")
         .generate()
         .unwrap();
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());

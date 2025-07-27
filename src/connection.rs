@@ -24,12 +24,7 @@ impl Connection {
             .into_raw();
         let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
         let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
-        std::thread::spawn(move || {
-            while let Some(s) = waker_receive.recv().unwrap() {
-                std::thread::sleep(std::time::Duration::from_secs(2));
-                s.wake();
-            }
-        });
+        wakeup_when_socket_writable(conn, waker_receive);
         PendingConnection { conn, waker_send }
     }
 
@@ -71,4 +66,18 @@ fn get_connection_error(conn: *const libpq::PGconn) -> ConnectionError {
     ConnectionError {
         message: String::from(raw_error_message.to_str().unwrap()),
     }
+}
+
+fn wakeup_when_socket_writable(
+    conn: *const libpq::PGconn,
+    waker_receive: std::sync::mpsc::Receiver<Option<std::task::Waker>>,
+) {
+    let socket: std::ffi::c_int = unsafe { libpq::PQsocket(conn) };
+    std::thread::spawn(move || {
+        while let Some(s) = waker_receive.recv().unwrap() {
+            // TODO: Add a timeout!!!
+            unsafe { libpq::PQsocketPoll(socket, 0, 1, -1) };
+            s.wake();
+        }
+    });
 }
