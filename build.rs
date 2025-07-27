@@ -8,8 +8,15 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        .clang_args(libpq.include_paths.iter().map(|include_path| format!("-I{}", include_path.display())))
-        .default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: true })
+        .clang_args(
+            libpq
+                .include_paths
+                .iter()
+                .map(|include_path| format!("-I{}", include_path.display())),
+        )
+        .default_enum_style(bindgen::EnumVariation::Rust {
+            non_exhaustive: true,
+        })
         .generate()
         .unwrap();
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());

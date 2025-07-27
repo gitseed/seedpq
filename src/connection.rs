@@ -2,29 +2,28 @@ use std::sync::mpsc;
 
 use crate::libpq;
 pub struct Connection {
-    conn: *mut libpq::PGconn
+    conn: *mut libpq::PGconn,
 }
 
 pub struct PendingConnection {
     conn: *mut libpq::PGconn,
-    waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>
+    waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>,
 }
 
 #[derive(Debug)]
 pub struct ConnectionError {
     #[allow(dead_code)]
-    message: String
+    message: String,
 }
 
 impl Connection {
+    #[allow(clippy::new_ret_no_self)] // I want new to be async by default. There will be a new_sync that will behave in the traditional way.
     pub fn new(connection_string: &str) -> PendingConnection {
         let raw_conninfo: *mut std::ffi::c_char = std::ffi::CString::new(connection_string)
             .expect("Postgres connection info should not contain internal null characters")
             .into_raw();
         let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
-
         let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
-
         std::thread::spawn(move || {
             loop {
                 match waker_receive.recv().unwrap() {
@@ -36,7 +35,6 @@ impl Connection {
                 }
             }
         });
-
         PendingConnection { conn, waker_send }
     }
 
@@ -54,13 +52,14 @@ impl Drop for Connection {
 impl Future for PendingConnection {
     type Output = Result<Connection, ConnectionError>;
 
-    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
         let status: libpq::PostgresPollingStatusType = unsafe { libpq::PQconnectPoll(self.conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Ok(Connection {
-                conn: self.conn
-            }))
+            std::task::Poll::Ready(Ok(Connection { conn: self.conn }))
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
             self.waker_send.send(None).unwrap();
             std::task::Poll::Ready(Err(get_connection_error(self.conn)))
