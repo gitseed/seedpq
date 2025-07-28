@@ -5,6 +5,7 @@ use crate::libpq;
 /// The private struct containing the raw C pointer to the postgres connection.
 /// Has some implementations that apply to connections regardless of state.
 /// Most notably drop, which will call PQFinish on the connection.
+#[derive(Debug)]
 struct RawConnection {
     conn: *mut libpq::PGconn,
 }
@@ -18,7 +19,10 @@ pub struct Connection {
 
 /// A pending connection is not established or failed yet, but it impl Future, so it can be awaited to get a Result<Connection, BadConnection>
 pub struct PendingConnection {
-    conn: RawConnection,
+    // We need to use Option here. As far as the compiler knows Poll might be called after returning Ready.
+    // Of course doing so will panic via unwrap() spam.
+    // This means we can't transfer ownership directly, but have to do it via Option's take()
+    conn: Option<RawConnection>,
     waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>,
 }
 
@@ -27,11 +31,13 @@ pub struct BadConnection {
     conn: RawConnection,
 }
 
-#[derive(Debug)]
-pub struct ConnectionError {
-    #[allow(dead_code)]
-    message: String,
+impl std::fmt::Debug for BadConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let raw_error_message: &std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
+        f.write_str(&String::from(raw_error_message.to_str().unwrap()))
+    }
 }
+
 
 impl Connection {
     #[allow(clippy::new_ret_no_self)] // I want new to be async by default. There will be a new_sync that will behave in the traditional way.
@@ -43,7 +49,7 @@ impl Connection {
         let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
         wakeup_when_socket_writable(conn, waker_receive);
         PendingConnection {
-            conn: RawConnection { conn },
+            conn: Some(RawConnection { conn }),
             waker_send,
         }
     }
@@ -54,32 +60,24 @@ impl Connection {
 }
 
 impl Future for PendingConnection {
-    type Output = Result<Connection, ConnectionError>;
+    type Output = Result<Connection, BadConnection>;
 
     fn poll(
-        self: std::pin::Pin<&mut Self>,
+        mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         let status: libpq::PostgresPollingStatusType =
-            unsafe { libpq::PQconnectPoll(self.conn.conn) };
+            unsafe { libpq::PQconnectPoll(self.conn.as_ref().unwrap().conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Ok(Connection { conn: self.conn }))
+            std::task::Poll::Ready(Ok(Connection { conn: self.conn.take().unwrap() }))
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Err(get_connection_error(self.conn.conn)))
+            std::task::Poll::Ready(Err(BadConnection { conn: self.conn.take().unwrap() }))
         } else {
             self.waker_send.send(Some(cx.waker().clone())).unwrap();
             std::task::Poll::Pending
         }
-    }
-}
-
-fn get_connection_error(conn: *const libpq::PGconn) -> ConnectionError {
-    let raw_error_message: &std::ffi::CStr =
-        unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(conn)) };
-    ConnectionError {
-        message: String::from(raw_error_message.to_str().unwrap()),
     }
 }
 
