@@ -5,9 +5,14 @@ use crate::libpq;
 /// The private struct containing the raw C pointer to the postgres connection.
 /// Has some implementations that apply to connections regardless of state.
 /// Most notably drop, which will call PQFinish on the connection.
-#[derive(Debug)]
 struct RawConnection {
     conn: *mut libpq::PGconn,
+}
+
+impl Drop for RawConnection {
+    fn drop(&mut self) {
+        unsafe { libpq::PQfinish(self.conn) }
+    }
 }
 
 /// Represents an established connection, that is usable for doing things such as running queries.
@@ -17,46 +22,19 @@ pub struct Connection {
     conn: RawConnection,
 }
 
-/// A pending connection is not established or failed yet, but it impl Future, so it can be awaited to get a Result<Connection, BadConnection>
+impl Connection {
+    pub fn server_version(&mut self) -> i64 {
+        (unsafe { libpq::PQserverVersion(self.conn.conn) }) as i64
+    }
+}
+
+/// A pending connection is not established or failed yet, that can be awaited to get a Result<Connection, BadConnection>
 pub struct PendingConnection {
     // We need to use Option here. As far as the compiler knows Poll might be called after returning Ready.
     // Of course doing so will panic via unwrap() spam.
     // This means we can't transfer ownership directly, but have to do it via Option's take()
     conn: Option<RawConnection>,
     waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>,
-}
-
-/// A bad connection that can't be used for sending queries or similar.
-pub struct BadConnection {
-    conn: RawConnection,
-}
-
-impl std::fmt::Debug for BadConnection {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let raw_error_message: &std::ffi::CStr =
-            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
-        f.write_str(&String::from(raw_error_message.to_str().unwrap()))
-    }
-}
-
-impl Connection {
-    #[allow(clippy::new_ret_no_self)] // I want new to be async by default. There will be a new_sync that will behave in the traditional way.
-    pub fn new(connection_string: &str) -> PendingConnection {
-        let raw_conninfo: *mut std::ffi::c_char = std::ffi::CString::new(connection_string)
-            .expect("Postgres connection info should not contain internal null characters")
-            .into_raw();
-        let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
-        let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
-        wakeup_when_socket_writable(conn, waker_receive);
-        PendingConnection {
-            conn: Some(RawConnection { conn }),
-            waker_send,
-        }
-    }
-
-    pub fn server_version(&mut self) -> i64 {
-        (unsafe { libpq::PQserverVersion(self.conn.conn) }) as i64
-    }
 }
 
 impl Future for PendingConnection {
@@ -85,6 +63,39 @@ impl Future for PendingConnection {
     }
 }
 
+/// A bad connection that can't be used for sending queries or similar.
+/// Debug printing this connection, will display the PQerrorMessage associated with the connection.
+pub struct BadConnection {
+    conn: RawConnection,
+}
+
+impl std::fmt::Debug for BadConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let raw_error_message: &std::ffi::CStr =
+            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
+        f.write_str(&String::from(raw_error_message.to_str().unwrap()))
+    }
+}
+
+/// Use the connection_string to attempt to establish a postgres connection.
+/// Returns a PendingConnection that can be awaited to get a Result<Connection, FailedConnection>
+/// If your connection_string includes a hostaddr parameter then this function should not block.
+pub fn connect(connection_string: &str) -> PendingConnection {
+    let raw_conninfo: *mut std::ffi::c_char = std::ffi::CString::new(connection_string)
+        .expect("Postgres connection info should not contain internal null characters")
+        .into_raw();
+    let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
+    let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
+    wakeup_when_socket_writable(conn, waker_receive);
+    PendingConnection {
+        conn: Some(RawConnection { conn }),
+        waker_send,
+    }
+}
+
+/// Spawns a thread that blocks until it recieves a waker from supplied channel.
+/// Once the spawned thread recieves the waiter, it blocks until the socket of the provided connection is ready for writing.
+/// Once the socket is ready for writing, it will call wakeup on the Waker that it recieved earlier.
 fn wakeup_when_socket_writable(
     conn: *const libpq::PGconn,
     waker_receive: std::sync::mpsc::Receiver<Option<std::task::Waker>>,

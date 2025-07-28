@@ -1,10 +1,7 @@
-use seedpq;
+use seedpq::connection::{Connection, connect};
 
 #[tokio::main]
 async fn main() {
-    let test_connection_string: &'static str = "postgres:///gitseed";
-    let pending: seedpq::connection::PendingConnection =
-        seedpq::connection::Connection::new(test_connection_string);
-    let mut c = pending.await.unwrap();
+    let mut c: Connection = connect("postgres:///doesnotexist").await.unwrap();
     println!("{}", c.server_version());
 }
