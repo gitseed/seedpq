@@ -2,3 +2,4 @@
 
 pub mod connection;
 pub mod libpq;
+pub mod status;

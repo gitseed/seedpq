@@ -1,7 +1,10 @@
-use seedpq::connection::{Connection, connect};
+use seedpq::connection::{BadConnection, Connection, connect};
 
 #[tokio::main]
 async fn main() {
-    let mut c: Connection = connect("postgres:///doesnotexist").await.unwrap();
-    println!("{}", c.server_version());
+    let c: Result<Connection, BadConnection> = connect("postgres:///gitseed").await;
+    let (c, version) = c.unwrap().server_version();
+    println!("{}", version);
+    let (_, version) = c.unwrap().server_version();
+    println!("{}", version);
 }

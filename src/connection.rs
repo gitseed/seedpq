@@ -23,8 +23,14 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn server_version(&mut self) -> i64 {
-        (unsafe { libpq::PQserverVersion(self.conn.conn) }) as i64
+    /// Returns the raw *mut of the given postgres connection
+    pub fn raw(&self) -> *mut libpq::PGconn {
+        self.conn.conn
+    }
+
+    /// Consumes the good connection and makes a bad connection, moving the underlying RawConnection.
+    pub fn bad(self) -> BadConnection {
+        BadConnection { conn: self.conn }
     }
 }
 
