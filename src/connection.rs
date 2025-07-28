@@ -18,11 +18,11 @@ impl Drop for RawConnection {
 /// Represents an established connection, that is usable for doing things such as running queries.
 /// Every implementation on Connection will return a Result (or future Result) with FailedConnection as the error type.
 /// This is because a connection can go bad at any time and for any reason, as is the nature of computer networking.
-pub struct Connection {
+pub struct GoodConnection {
     conn: RawConnection,
 }
 
-impl Connection {
+impl GoodConnection {
     /// Returns the raw *mut of the given postgres connection
     pub fn raw(&self) -> *mut libpq::PGconn {
         self.conn.conn
@@ -44,7 +44,7 @@ pub struct PendingConnection {
 }
 
 impl Future for PendingConnection {
-    type Output = Result<Connection, BadConnection>;
+    type Output = Result<GoodConnection, BadConnection>;
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
@@ -54,7 +54,7 @@ impl Future for PendingConnection {
             unsafe { libpq::PQconnectPoll(self.conn.as_ref().unwrap().conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Ok(Connection {
+            std::task::Poll::Ready(Ok(GoodConnection {
                 conn: self.conn.take().unwrap(),
             }))
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
