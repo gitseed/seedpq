@@ -33,11 +33,11 @@ pub struct BadConnection {
 
 impl std::fmt::Debug for BadConnection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let raw_error_message: &std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
+        let raw_error_message: &std::ffi::CStr =
+            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
         f.write_str(&String::from(raw_error_message.to_str().unwrap()))
     }
 }
-
 
 impl Connection {
     #[allow(clippy::new_ret_no_self)] // I want new to be async by default. There will be a new_sync that will behave in the traditional way.
@@ -70,10 +70,14 @@ impl Future for PendingConnection {
             unsafe { libpq::PQconnectPoll(self.conn.as_ref().unwrap().conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Ok(Connection { conn: self.conn.take().unwrap() }))
+            std::task::Poll::Ready(Ok(Connection {
+                conn: self.conn.take().unwrap(),
+            }))
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Err(BadConnection { conn: self.conn.take().unwrap() }))
+            std::task::Poll::Ready(Err(BadConnection {
+                conn: self.conn.take().unwrap(),
+            }))
         } else {
             self.waker_send.send(Some(cx.waker().clone())).unwrap();
             std::task::Poll::Pending
