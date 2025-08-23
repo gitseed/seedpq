@@ -5,5 +5,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut c: Connection = connect("postgres:///gitseed").await;
     let version = c.server_version()?;
     println!("{}", version);
+
+    let result = c.exec("SELECT version();")?.await;
+    println!("{:?}", result);
     Ok(())
 }

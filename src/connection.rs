@@ -5,7 +5,7 @@ use crate::libpq;
 /// The private struct containing the raw C pointer to the postgres connection.
 /// Has some implementations that apply to connections regardless of state.
 /// Most notably drop, which will call PQFinish on the connection.
-pub(crate) struct RawConnection {
+struct RawConnection {
     conn: *mut libpq::PGconn,
 }
 
@@ -17,7 +17,7 @@ impl Drop for RawConnection {
 
 /// Represents a connection that's either established, or failed.
 pub struct Connection {
-    pub(crate) conn: RawConnection,
+    conn: RawConnection,
     pub(crate) ok: bool,
 }
 
@@ -26,30 +26,32 @@ pub struct ConnectionError {
 }
 
 impl Connection {
-    /// Returns the raw *mut of the given postgres connection
-    /// Accessing this through a getter allows us to be honest that this is mut
-    pub fn raw(&mut self) -> *mut libpq::PGconn {
+    /// Returns the raw *mut of the given postgres connection.
+    /// Accessing this through a getter allows us to be honest that this is mut.
+    pub(crate) fn raw(&mut self) -> *mut libpq::PGconn {
         self.conn.conn
     }
 
+    /// Returns the last error according to the postgres server.
+    /// Also sets the connection as bad.
     pub fn error(&mut self) -> ConnectionError {
         self.ok = false;
         let raw_error_message: &std::ffi::CStr =
-            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
+            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.raw())) };
         ConnectionError {
             message: String::from(raw_error_message.to_str().unwrap()),
         }
     }
 }
 
-/// Currently the same as display
+/// Currently the same as display.
 impl std::fmt::Debug for ConnectionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self}")
     }
 }
 
-/// Display connection info
+/// Display connection info.
 impl std::fmt::Display for ConnectionError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "connection error: {}", self.message)
@@ -58,11 +60,13 @@ impl std::fmt::Display for ConnectionError {
 
 impl std::error::Error for ConnectionError {}
 
-/// A pending connection is not established or failed yet, that can be awaited to get a Result<Connection, BadConnection>
+/// A pending connection is not established or failed yet, that can be awaited to get a Connection.
+/// The Connection may or may not be ok.
 pub struct PendingConnection {
     // We need to use Option here. As far as the compiler knows Poll might be called after returning Ready.
     // Of course doing so will panic via unwrap() spam.
-    // This means we can't transfer ownership directly, but have to do it via Option's take()
+    // This means we can't transfer ownership directly, but have to do it via Option's take().
+    // But this is effectively never None, unless you're performing some Future abuse.
     conn: Option<RawConnection>,
     waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>,
 }
@@ -100,7 +104,7 @@ impl Future for PendingConnection {
 /// If your connection_string includes a hostaddr parameter then this function should not block.
 pub fn connect(connection_string: &str) -> PendingConnection {
     let raw_conninfo: *mut std::ffi::c_char = std::ffi::CString::new(connection_string)
-        .expect("Postgres connection info should not contain internal null characters")
+        .expect("postgres connection info should not contain internal null characters")
         .into_raw();
     let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
     let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();

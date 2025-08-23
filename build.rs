@@ -18,6 +18,10 @@ fn main() {
             non_exhaustive: true,
         })
         .ctypes_prefix("::std::ffi")
+        // From: https://github.com/rust-lang/rust-bindgen/discussions/2599
+        .opaque_type("FILE") // don't chase the underlying types
+        .blocklist_type("FILE") // and don't write a type in generated bindings
+        .raw_line("use libc::FILE;") // write this instead
         .generate()
         .unwrap();
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
