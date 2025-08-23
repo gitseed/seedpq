@@ -9,10 +9,10 @@ impl Connection {
         } else {
             let version: i64 = (unsafe { libpq::PQserverVersion(self.raw()) }) as i64;
             if version > 0 {
-                self.ok = false;
-                Err(self.error())
-            } else {
                 Ok(version)
+            } else {
+                self.ok = false;
+                Err(self.error())                
             }
         }
     }
