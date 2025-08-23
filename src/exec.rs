@@ -1,5 +1,5 @@
 use crate::connection::{Connection, ConnectionError};
-use std::{os::fd::AsRawFd, ptr::null};
+use std::ptr::null;
 
 use crate::libpq;
 
@@ -16,10 +16,10 @@ pub struct QueryResult {
 /// Display the query result.
 impl std::fmt::Display for QueryResult {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        unsafe {
-            libpq::PQprint(libc::fdopen(std::io::stdout().as_raw_fd(), c"w".as_ptr()), self.result, null());
-        }
-        write!(f, "")
+        let result = unsafe {
+            std::ffi::CStr::from_ptr(libpq::PQgetvalue(self.result, 0, 0)).to_str().unwrap()
+        };
+        write!(f, "{result}")
     }
 }
 
