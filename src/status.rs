@@ -1,14 +1,19 @@
-use crate::connection::{BadConnection, GoodConnection};
+use crate::connection::{Connection, ConnectionError};
 use crate::libpq;
 
-impl GoodConnection {
+impl Connection {
     /// Returns the server version, in the integer format used my libpq.
-    pub fn server_version(self) -> (Result<GoodConnection, BadConnection>, i64) {
-        let version: i64 = (unsafe { libpq::PQserverVersion(self.raw()) }) as i64;
-        if version > 0 {
-            (Ok(self), version)
+    pub fn server_version(&mut self) -> Result<i64, ConnectionError> {
+        if !self.ok {
+            Err(self.error())
         } else {
-            (Err(self.bad()), version)
+            let version: i64 = (unsafe { libpq::PQserverVersion(self.raw()) }) as i64;
+            if version > 0 {
+                self.ok = false;
+                Err(self.error())
+            } else {
+                Ok(version)
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ use crate::libpq;
 /// The private struct containing the raw C pointer to the postgres connection.
 /// Has some implementations that apply to connections regardless of state.
 /// Most notably drop, which will call PQFinish on the connection.
-struct RawConnection {
+pub(crate) struct RawConnection {
     conn: *mut libpq::PGconn,
 }
 
@@ -15,24 +15,45 @@ impl Drop for RawConnection {
     }
 }
 
-/// Represents an established connection, that is usable for doing things such as running queries.
-/// Every implementation on Connection will return a Result (or future Result) with FailedConnection as the error type.
-/// This is because a connection can go bad at any time and for any reason, as is the nature of computer networking.
-pub struct GoodConnection {
-    conn: RawConnection,
+/// Represents a connection that's either established, or failed.
+pub struct Connection {
+    pub(crate) conn: RawConnection,
+    pub(crate) ok: bool,
 }
 
-impl GoodConnection {
+pub struct ConnectionError {
+    message: String,
+}
+
+impl Connection {
     /// Returns the raw *mut of the given postgres connection
-    pub fn raw(&self) -> *mut libpq::PGconn {
+    /// Accessing this through a getter allows us to be honest that this is mut
+    pub fn raw(&mut self) -> *mut libpq::PGconn {
         self.conn.conn
     }
 
-    /// Consumes the good connection and makes a bad connection, moving the underlying RawConnection.
-    pub fn bad(self) -> BadConnection {
-        BadConnection { conn: self.conn }
+    pub fn error(&self) -> ConnectionError {
+        let raw_error_message: &std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
+        ConnectionError { message: String::from(raw_error_message.to_str().unwrap()) }
     }
 }
+
+
+/// Currently the same as display
+impl std::fmt::Debug for ConnectionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+/// Display connection info
+impl std::fmt::Display for ConnectionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "connection error: {}", self.message)
+    }
+}
+
+impl std::error::Error for ConnectionError {}
 
 /// A pending connection is not established or failed yet, that can be awaited to get a Result<Connection, BadConnection>
 pub struct PendingConnection {
@@ -44,7 +65,7 @@ pub struct PendingConnection {
 }
 
 impl Future for PendingConnection {
-    type Output = Result<GoodConnection, BadConnection>;
+    type Output = Connection;
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
@@ -54,32 +75,20 @@ impl Future for PendingConnection {
             unsafe { libpq::PQconnectPoll(self.conn.as_ref().unwrap().conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Ok(GoodConnection {
+            std::task::Poll::Ready(Connection {
                 conn: self.conn.take().unwrap(),
-            }))
+                ok: true,
+            })
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Err(BadConnection {
+            std::task::Poll::Ready(Connection {
                 conn: self.conn.take().unwrap(),
-            }))
+                ok: false,
+            })
         } else {
             self.waker_send.send(Some(cx.waker().clone())).unwrap();
             std::task::Poll::Pending
         }
-    }
-}
-
-/// A bad connection that can't be used for sending queries or similar.
-/// Debug printing this connection, will display the PQerrorMessage associated with the connection.
-pub struct BadConnection {
-    conn: RawConnection,
-}
-
-impl std::fmt::Debug for BadConnection {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let raw_error_message: &std::ffi::CStr =
-            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
-        f.write_str(&String::from(raw_error_message.to_str().unwrap()))
     }
 }
 

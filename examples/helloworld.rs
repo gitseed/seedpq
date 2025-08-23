@@ -1,11 +1,9 @@
-use seedpq::connection::{BadConnection, GoodConnection, connect};
+use seedpq::connection::{Connection, connect};
 
 #[tokio::main]
-async fn main() -> Result<(), BadConnection> {
-    let c: Result<GoodConnection, BadConnection> = connect("postgres:///gitseed").await;
-    let (c, version) = c?.server_version();
-    println!("{}", version);
-    let (_, version) = c?.server_version();
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut c: Connection = connect("postgres:///gitseed").await;
+    let version = c.server_version()?;
     println!("{}", version);
     Ok(())
 }
