@@ -32,12 +32,15 @@ impl Connection {
         self.conn.conn
     }
 
-    pub fn error(&self) -> ConnectionError {
-        let raw_error_message: &std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
-        ConnectionError { message: String::from(raw_error_message.to_str().unwrap()) }
+    pub fn error(&mut self) -> ConnectionError {
+        self.ok = false;
+        let raw_error_message: &std::ffi::CStr =
+            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn.conn)) };
+        ConnectionError {
+            message: String::from(raw_error_message.to_str().unwrap()),
+        }
     }
 }
-
 
 /// Currently the same as display
 impl std::fmt::Debug for ConnectionError {

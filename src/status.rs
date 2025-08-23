@@ -4,15 +4,15 @@ use crate::libpq;
 impl Connection {
     /// Returns the server version, in the integer format used my libpq.
     pub fn server_version(&mut self) -> Result<i64, ConnectionError> {
-        if !self.ok {
-            Err(self.error())
-        } else {
-            let version: i64 = (unsafe { libpq::PQserverVersion(self.raw()) }) as i64;
-            if version > 0 {
-                Ok(version)
-            } else {
-                self.ok = false;
-                Err(self.error())                
+        match self.ok {
+            false => Err(self.error()),
+            true => {
+                let version: i64 = (unsafe { libpq::PQserverVersion(self.raw()) }) as i64;
+                if version > 0 {
+                    Ok(version)
+                } else {
+                    Err(self.error())
+                }
             }
         }
     }
