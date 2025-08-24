@@ -40,18 +40,19 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
             .unwrap()
             .await
             .unwrap();
+        let mut values: String = String::new();
+
         for n in 0..TIMES {
-            c.exec(
-                format!(
-                    "insert into users (name, hair_color) VALUES ('User {}', NULL)",
-                    n.to_string()
-                )
-                .as_str(),
-            )
+            values.push_str("('User ");
+            values.push_str(n.to_string().as_str());
+            values.push_str("', NULL),");
+        }
+        // Remove the trailing comma.
+        values.pop();
+        c.exec(format!("insert into users (name, hair_color) VALUES {}", values).as_str())
             .unwrap()
             .await
             .unwrap();
-        }
         c
     });
 
