@@ -3,6 +3,8 @@ use std::sync::mpsc;
 
 use crate::libpq;
 
+use thiserror::Error;
+
 /// The private struct containing the raw C pointer to the postgres connection.
 /// Has some implementations that apply to connections regardless of state.
 /// Most notably drop, which will call PQFinish on the connection.
@@ -22,8 +24,16 @@ pub struct Connection {
     pub(crate) ok: bool,
 }
 
+#[derive(Error, Debug)]
 pub struct ConnectionError {
     message: String,
+}
+
+/// Display connection info.
+impl std::fmt::Display for ConnectionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "connection error: {}", self.message)
+    }
 }
 
 impl Connection {
@@ -44,22 +54,6 @@ impl Connection {
         }
     }
 }
-
-/// Currently the same as display.
-impl std::fmt::Debug for ConnectionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self}")
-    }
-}
-
-/// Display connection info.
-impl std::fmt::Display for ConnectionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "connection error: {}", self.message)
-    }
-}
-
-impl std::error::Error for ConnectionError {}
 
 /// A pending connection is not established or failed yet, that can be awaited to get a Connection.
 /// The Connection may or may not be ok.

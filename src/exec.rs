@@ -2,9 +2,20 @@ use std::ptr::null;
 use std::sync::mpsc;
 
 use crate::connection::{Connection, ConnectionError};
-use crate::query_result::QueryResult;
+use crate::query_result::{QueryError, QueryResult};
 
 use crate::libpq;
+
+use thiserror::Error;
+
+/// This *is* exhuastive. You either get a error before you get the PGresult, or you get a dud PGresult.
+#[derive(Error, Debug)]
+pub enum ExecError {
+    #[error(transparent)]
+    ConnectionError(ConnectionError),
+    #[error(transparent)]
+    QueryError(QueryError),
+}
 
 /// A pending query that can be awaited to obtain a Result<QueryResult, QueryError>.
 pub struct PendingQuery<'a> {
@@ -13,7 +24,7 @@ pub struct PendingQuery<'a> {
 }
 
 impl Future for PendingQuery<'_> {
-    type Output = Result<QueryResult, ConnectionError>;
+    type Output = Result<QueryResult, ExecError>;
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
@@ -24,7 +35,7 @@ impl Future for PendingQuery<'_> {
         if unsafe { libpq::PQconsumeInput(self.conn.raw()) } != 1 {
             self.waker_send.send(None).unwrap();
             // From the docs: "PQconsumeInput normally returns 1 indicating “no error”, but returns 0 if there was some kind of trouble."
-            return std::task::Poll::Ready(Err(self.conn.error()));
+            return std::task::Poll::Ready(Err(ExecError::ConnectionError(self.conn.error())));
         };
 
         // From the docs: "A 0 return indicates that PQgetResult can be called with assurance of not blocking."
@@ -36,7 +47,12 @@ impl Future for PendingQuery<'_> {
                 unsafe { libpq::PQgetResult(self.conn.raw()) };
             assert!(expecting_null.is_null());
             self.waker_send.send(None).unwrap();
-            std::task::Poll::Ready(Ok(QueryResult { result: raw_result }))
+            match result_ok(raw_result) {
+                true => std::task::Poll::Ready(Ok(QueryResult { result: raw_result })),
+                false => std::task::Poll::Ready(Err(ExecError::QueryError(QueryError {
+                    result: raw_result,
+                }))),
+            }
         } else {
             self.waker_send.send(Some(cx.waker().clone())).unwrap();
             std::task::Poll::Pending
@@ -99,4 +115,14 @@ fn wakeup_when_socket_readable(
             s.wake();
         }
     });
+}
+
+fn result_ok(raw_result: *mut libpq::PGresult) -> bool {
+    let result_status: libpq::ExecStatusType = unsafe { libpq::PQresultStatus(raw_result) };
+    matches!(
+        result_status,
+        libpq::ExecStatusType::PGRES_EMPTY_QUERY
+            | libpq::ExecStatusType::PGRES_COMMAND_OK
+            | libpq::ExecStatusType::PGRES_TUPLES_OK
+    )
 }

@@ -1,5 +1,32 @@
 use crate::libpq;
 
+pub struct QueryError {
+    pub(crate) result: *mut libpq::PGresult,
+}
+
+impl Drop for QueryError {
+    fn drop(&mut self) {
+        unsafe { libpq::PQclear(self.result) }
+    }
+}
+
+impl std::fmt::Display for QueryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let raw_message: &std::ffi::CStr =
+            unsafe { std::ffi::CStr::from_ptr(libpq::PQresultErrorMessage(self.result)) };
+        write!(f, "{}", raw_message.to_string_lossy())
+    }
+}
+
+impl std::fmt::Debug for QueryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO: Maybe use PQresultVerboseErrorMessage here?
+        write!(f, "{self}")
+    }
+}
+
+impl std::error::Error for QueryError {}
+
 #[derive(Debug)]
 pub struct QueryResult {
     pub(crate) result: *mut libpq::PGresult,
