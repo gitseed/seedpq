@@ -1,3 +1,4 @@
+use std::ptr::null_mut;
 use std::sync::mpsc;
 
 use crate::libpq;
@@ -71,6 +72,13 @@ pub struct PendingConnection {
     waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>,
 }
 
+unsafe extern "C" fn blackhole_notice_receiver(
+    _: *mut std::ffi::c_void,
+    pg_result: *const libpq::pg_result,
+) {
+    {}
+}
+
 impl Future for PendingConnection {
     type Output = Connection;
 
@@ -82,8 +90,13 @@ impl Future for PendingConnection {
             unsafe { libpq::PQconnectPoll(self.conn.as_ref().unwrap().conn) };
         if status == libpq::PostgresPollingStatusType::PGRES_POLLING_OK {
             self.waker_send.send(None).unwrap();
+            let conn = self.conn.take().unwrap();
+            // Disable notice recieving.
+            unsafe {
+                libpq::PQsetNoticeReceiver(conn.conn, Some(blackhole_notice_receiver), null_mut())
+            };
             std::task::Poll::Ready(Connection {
-                conn: self.conn.take().unwrap(),
+                conn: conn,
                 ok: true,
             })
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {

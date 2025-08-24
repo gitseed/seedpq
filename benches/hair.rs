@@ -2,22 +2,16 @@ use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 use seedpq::connection::{Connection, connect};
 use tokio;
 
-//                                                              Table "public.users"
-//    Column   |       Type        | Collation | Nullable |              Default              | Storage  | Compression | Stats target | Description
-// ------------+-------------------+-----------+----------+-----------------------------------+----------+-------------+--------------+-------------
-//  id         | integer           |           | not null | nextval('users_id_seq'::regclass) | plain    |             |              |
-//  name       | character varying |           | not null |                                   | extended |             |              |
-//  hair_color | character varying |           |          |                                   | extended |             |              |
 #[allow(dead_code)]
-struct Users<'a> {
+struct User<'a> {
     id: i32,
     name: &'a str,
     hair_color: Option<&'a str>,
 }
 
-impl<'a> From<[Option<&'a [u8]>; 3]> for Users<'a> {
+impl<'a> From<[Option<&'a [u8]>; 3]> for User<'a> {
     fn from(item: [Option<&'a [u8]>; 3]) -> Self {
-        Users::<'a> {
+        User::<'a> {
             id: i32::from_be_bytes(item[0].unwrap().try_into().unwrap()),
             name: str::from_utf8(item[1].unwrap()).unwrap(),
             hair_color: match item[2] {
@@ -29,16 +23,35 @@ impl<'a> From<[Option<&'a [u8]>; 3]> for Users<'a> {
 }
 
 pub fn bench_trivial_seed(b: &mut Bencher) {
+    const TIMES: usize = 10000;
+
     let runtime = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-    let mut c: Connection = runtime.block_on(async { connect("postgres:///example").await });
+    let mut c: Connection = runtime.block_on(async {
+        let mut c: Connection = connect("postgres:///example").await;
+        c.exec("TRUNCATE TABLE comments CASCADE").unwrap().await;
+        c.exec("TRUNCATE TABLE posts CASCADE").unwrap().await;
+        c.exec("TRUNCATE TABLE users CASCADE").unwrap().await;
+        for n in 0..TIMES {
+            c.exec(
+                format!(
+                    "insert into users (name, hair_color) VALUES ('User {}', NULL)",
+                    n.to_string()
+                )
+                .as_str(),
+            )
+            .unwrap()
+            .await;
+        }
+        c
+    });
 
     b.iter(|| {
         runtime.block_on(async {
             let result: seedpq::query_result::QueryResult = c
-                .exec("SELECT id, name, hair_color FROM users;")
+                .exec("SELECT id, name, hair_color FROM users")
                 .unwrap()
                 .await;
-            let _output: Vec<Users> = result.fetch_all::<3, Users>();
+            result.fetch_all::<3, User>()
         })
     })
 }

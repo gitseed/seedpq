@@ -42,7 +42,9 @@ impl Connection {
                 null(),
                 null(),
                 null(),
-                0,
+                // Specify zero to obtain results in text format, or one to obtain results in binary format.
+                // If you specify text format then binary numbers wil be sent in text form which is dumb.
+                1,
             )
         };
 
