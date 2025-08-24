@@ -117,6 +117,7 @@ pub fn connect(connection_string: &str) -> PendingConnection {
         .expect("postgres connection info should not contain internal null characters")
         .into_raw();
     let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectStart(raw_conninfo) };
+    assert!(!conn.is_null()); // Implies oom or some other catastrophic error.
     let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
     wakeup_when_socket_writable(conn, waker_receive);
     PendingConnection {

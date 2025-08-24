@@ -17,9 +17,18 @@ impl Future for PendingQuery<'_> {
         mut self: std::pin::Pin<&mut Self>,
         _cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        let raw_result: *mut libpq::pg_result = unsafe { libpq::PQgetResult(self.conn.raw()) };
-        unsafe { libpq::PQgetResult(self.conn.raw()) };
-        std::task::Poll::Ready(QueryResult { result: raw_result })
+        if true {
+            // We can now call PQgetResult without blocking.
+            // Because we're using PQsendQueryParams there should only be one pg_result followed by a nullptr.
+            let raw_result: *mut libpq::pg_result = unsafe { libpq::PQgetResult(self.conn.raw()) };
+            assert!(!raw_result.is_null());
+            let expecting_null: *mut libpq::pg_result =
+                unsafe { libpq::PQgetResult(self.conn.raw()) };
+            assert!(expecting_null.is_null());
+            std::task::Poll::Ready(QueryResult { result: raw_result })
+        } else {
+            std::task::Poll::Pending
+        }
     }
 }
 
@@ -44,7 +53,7 @@ impl Connection {
                 null(),
                 null(),
                 // Specify zero to obtain results in text format, or one to obtain results in binary format.
-                // If you specify text format then binary numbers wil be sent in text form which is dumb.
+                // If you specify text format then numbers wil be sent in text form which is dumb.
                 1,
             )
         };
