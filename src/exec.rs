@@ -15,7 +15,7 @@ impl Future for PendingQuery<'_> {
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        _cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         let raw_result: *mut libpq::pg_result = unsafe { libpq::PQgetResult(self.conn.raw()) };
         unsafe { libpq::PQgetResult(self.conn.raw()) };
@@ -24,6 +24,7 @@ impl Future for PendingQuery<'_> {
 }
 
 impl Connection {
+    #[allow(mismatched_lifetime_syntaxes)]
     pub fn exec(&mut self, query: &str) -> Result<PendingQuery, ConnectionError> {
         if !self.ok {
             return Err(self.error());

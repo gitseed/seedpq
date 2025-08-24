@@ -8,6 +8,7 @@ libc = "0.2.174"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
+criterion = { version = "0.5", features = ["html_reports"] }
 
 [build-dependencies]
 pkg-config = "0.3.32"
@@ -16,3 +17,7 @@ bindgen = "0.72.0"
 [lib]
 crate-type = ["lib"]
 bench = false
+
+[[bench]]
+name = "hair"
+harness = false
