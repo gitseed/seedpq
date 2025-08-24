@@ -8,8 +8,9 @@ libc = "0.2.174"
 thiserror = "2.0.16"
 
 [dev-dependencies]
-tokio = { version = "1", features = ["full"] }
 criterion = { version = "0.5", features = ["html_reports"] }
+futures = "0.3.31"
+futures-executor = "0.3"
 
 [build-dependencies]
 pkg-config = "0.3.32"

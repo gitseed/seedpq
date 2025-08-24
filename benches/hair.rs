@@ -1,6 +1,7 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 use seedpq::connection::{Connection, connect};
-use tokio;
+
+use futures::executor;
 
 #[allow(dead_code)]
 struct User<'a> {
@@ -25,8 +26,7 @@ impl<'a> From<[Option<&'a [u8]>; 3]> for User<'a> {
 pub fn bench_trivial_seed(b: &mut Bencher) {
     const TIMES: usize = 10000;
 
-    let runtime = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-    let mut c: Connection = runtime.block_on(async {
+    let mut c: Connection = executor::block_on(async {
         let mut c: Connection = connect("postgres:///example").await;
         c.exec("TRUNCATE TABLE comments CASCADE")
             .unwrap()
@@ -56,7 +56,7 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
     });
 
     b.iter(|| {
-        runtime.block_on(async {
+        executor::block_on(async {
             let result: seedpq::query_result::QueryResult = c
                 .exec("SELECT id, name, hair_color FROM users")
                 .unwrap()

@@ -1,5 +1,11 @@
 use seedpq::connection::{Connection, connect};
 
+use futures::executor;
+
+fn main() {
+    executor::block_on(async_main()).unwrap();
+}
+
 #[allow(dead_code)]
 #[derive(Debug)]
 struct User<'a> {
@@ -23,8 +29,7 @@ impl<'a> From<[Option<&'a [u8]>; 3]> for User<'a> {
 
 const TIMES: usize = 10;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
     let mut c: Connection = connect("postgres:///example").await;
     c.exec("TRUNCATE TABLE comments CASCADE")?.await?;
     c.exec("TRUNCATE TABLE posts CASCADE")?.await?;
