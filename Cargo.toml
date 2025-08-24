@@ -9,8 +9,7 @@ thiserror = "2.0.16"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-futures = "0.3.31"
-futures-executor = "0.3"
+futures = { version = "0.3.31", features = ["executor"] }
 
 [build-dependencies]
 pkg-config = "0.3.32"

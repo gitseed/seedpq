@@ -596,7 +596,6 @@ dependencies = [
  "bindgen",
  "criterion",
  "futures",
- "futures-executor",
  "libc",
  "pkg-config",
  "thiserror",
