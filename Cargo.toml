@@ -18,7 +18,3 @@ bindgen = "0.72.0"
 [lib]
 crate-type = ["lib"]
 bench = false
-
-[[bench]]
-name = "hair"
-harness = false

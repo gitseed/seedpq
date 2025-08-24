@@ -3,7 +3,7 @@ libpq based rust postgres library.
 
 ## Differences between seedpq and other postgres libraries
 
-Unlike other rust postgres libraries which implement things natively in postgres, seedpq uses the libpq C library that is offically maintained by the postgres maintainers. It doesn't aim to be a lightweight wrapper around the library that keeps all the logic of the original C library, but rather a substantial wrapper that tries to map things to comfortable rust patterns.
+* seedpq uses channels for parallelism, other libraries use futures
 
 ## Disadvantages of seedpq compared to other rust postgres libraries
 
