@@ -27,21 +27,39 @@ impl QueryResult {
         }
     }
 
-    pub fn fetch_one<'a, const N: usize, T: std::convert::From<[std::option::Option<&'a [u8]>; N]>>(&self) -> T {
+    pub fn fetch_one<
+        'a,
+        const N: usize,
+        T: std::convert::From<[std::option::Option<&'a [u8]>; N]>,
+    >(
+        &self,
+    ) -> T {
         assert!(N <= unsafe { libpq::PQnfields(self.result) } as usize);
         self.fetch_one_unchecked()
     }
 
     /// Fetches the first N columns of a single row of the query result.
-    fn fetch_one_unchecked<'a, const N: usize, T: std::convert::From<[std::option::Option<&'a [u8]>; N]>>(&self) -> T {
+    fn fetch_one_unchecked<
+        'a,
+        const N: usize,
+        T: std::convert::From<[std::option::Option<&'a [u8]>; N]>,
+    >(
+        &self,
+    ) -> T {
         core::array::from_fn(|column| self.fetch_cell::<'a>(0, column)).into()
     }
 
     /// Fetches all first N columns and all the rows of the query result.
-    pub fn fetch_all<'a, const N: usize, T: std::convert::From<[std::option::Option<&'a [u8]>; N]>>(&self) -> Vec<T> {
+    pub fn fetch_all<
+        'a,
+        const N: usize,
+        T: std::convert::From<[std::option::Option<&'a [u8]>; N]>,
+    >(
+        &self,
+    ) -> Vec<T> {
         assert!(N <= unsafe { libpq::PQnfields(self.result) as usize });
         let row_count: usize = unsafe { libpq::PQntuples(self.result) } as usize;
-        let mut result: Vec<T> =  Vec::with_capacity(row_count);
+        let mut result: Vec<T> = Vec::with_capacity(row_count);
         for row in 0..N {
             result.push(self.fetch_one_unchecked());
         }

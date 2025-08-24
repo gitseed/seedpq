@@ -3,19 +3,19 @@ use seedpq::connection::{Connection, connect};
 use tokio;
 
 //                                                              Table "public.users"
-//    Column   |       Type        | Collation | Nullable |              Default              | Storage  | Compression | Stats target | Description 
+//    Column   |       Type        | Collation | Nullable |              Default              | Storage  | Compression | Stats target | Description
 // ------------+-------------------+-----------+----------+-----------------------------------+----------+-------------+--------------+-------------
-//  id         | integer           |           | not null | nextval('users_id_seq'::regclass) | plain    |             |              | 
-//  name       | character varying |           | not null |                                   | extended |             |              | 
-//  hair_color | character varying |           |          |                                   | extended |             |              | 
+//  id         | integer           |           | not null | nextval('users_id_seq'::regclass) | plain    |             |              |
+//  name       | character varying |           | not null |                                   | extended |             |              |
+//  hair_color | character varying |           |          |                                   | extended |             |              |
 #[allow(dead_code)]
 struct Users<'a> {
     id: i32,
     name: &'a str,
-    hair_color: Option<&'a str>
+    hair_color: Option<&'a str>,
 }
 
-impl <'a>From<[Option<&'a [u8]>; 3]> for Users<'a> {
+impl<'a> From<[Option<&'a [u8]>; 3]> for Users<'a> {
     fn from(item: [Option<&'a [u8]>; 3]) -> Self {
         Users::<'a> {
             id: i32::from_be_bytes(item[0].unwrap().try_into().unwrap()),
@@ -34,7 +34,8 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
 
     b.iter(|| {
         runtime.block_on(async {
-            let result: seedpq::query_result::QueryResult = c.exec("SELECT id, name, hair_color FROM users;")
+            let result: seedpq::query_result::QueryResult = c
+                .exec("SELECT id, name, hair_color FROM users;")
                 .unwrap()
                 .await;
             let _output: Vec<Users> = result.fetch_all::<3, Users>();
