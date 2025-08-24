@@ -1,28 +1,13 @@
-use crate::connection::{Connection, ConnectionError};
 use std::ptr::null;
+
+use crate::connection::{Connection, ConnectionError};
+use crate::query_result::QueryResult;
 
 use crate::libpq;
 
 /// A pending query that can be awaited to obtain a Result<QueryResult, QueryError>.
 pub struct PendingQuery<'a> {
     conn: &'a mut Connection,
-}
-
-#[derive(Debug)]
-pub struct QueryResult {
-    result: *mut libpq::PGresult,
-}
-
-/// Display the query result.
-impl std::fmt::Display for QueryResult {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let result = unsafe {
-            std::ffi::CStr::from_ptr(libpq::PQgetvalue(self.result, 0, 0))
-                .to_str()
-                .unwrap()
-        };
-        write!(f, "{result}")
-    }
 }
 
 impl Future for PendingQuery<'_> {
