@@ -7,4 +7,6 @@ mod raw_connection;
 
 pub mod connection;
 pub mod info;
+pub mod notice;
 pub mod query;
+pub mod request;
