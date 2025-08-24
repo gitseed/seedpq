@@ -1,4 +1,5 @@
 use std::ptr::null;
+use std::sync::mpsc;
 
 use crate::connection::{Connection, ConnectionError};
 use crate::query_result::QueryResult;
@@ -8,6 +9,7 @@ use crate::libpq;
 /// A pending query that can be awaited to obtain a Result<QueryResult, QueryError>.
 pub struct PendingQuery<'a> {
     conn: &'a mut Connection,
+    waker_send: std::sync::mpsc::Sender<Option<std::task::Waker>>,
 }
 
 impl Future for PendingQuery<'_> {
@@ -15,11 +17,13 @@ impl Future for PendingQuery<'_> {
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
-        _cx: &mut std::task::Context<'_>,
+        cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         // From the docs: "PQisBusy will not itself attempt to read data from the server;
         // therefore PQconsumeInput must be invoked first, or the busy state will never end."
         if unsafe { libpq::PQconsumeInput(self.conn.raw()) } != 1 {
+            self.waker_send.send(None).unwrap();
+            // From the docs: "PQconsumeInput normally returns 1 indicating “no error”, but returns 0 if there was some kind of trouble."
             return std::task::Poll::Ready(Err(self.conn.error()));
         };
 
@@ -31,8 +35,10 @@ impl Future for PendingQuery<'_> {
             let expecting_null: *mut libpq::pg_result =
                 unsafe { libpq::PQgetResult(self.conn.raw()) };
             assert!(expecting_null.is_null());
+            self.waker_send.send(None).unwrap();
             std::task::Poll::Ready(Ok(QueryResult { result: raw_result }))
         } else {
+            self.waker_send.send(Some(cx.waker().clone())).unwrap();
             std::task::Poll::Pending
         }
     }
@@ -68,7 +74,29 @@ impl Connection {
         if sent_successfully != 1 {
             Err(self.error())
         } else {
-            Ok(PendingQuery { conn: self })
+            let (waker_send, waker_receive) = mpsc::channel::<Option<std::task::Waker>>();
+            wakeup_when_socket_readable(self.raw(), waker_receive);
+            Ok(PendingQuery {
+                conn: self,
+                waker_send,
+            })
         }
     }
+}
+
+/// Spawns a thread that blocks until it recieves a waker from supplied channel.
+/// Once the spawned thread recieves the waiter, it blocks until the socket of the provided connection is ready for writing.
+/// Once the socket is ready for writing, it will call wakeup on the Waker that it recieved earlier.
+fn wakeup_when_socket_readable(
+    conn: *const libpq::PGconn,
+    waker_receive: std::sync::mpsc::Receiver<Option<std::task::Waker>>,
+) {
+    let socket: std::ffi::c_int = unsafe { libpq::PQsocket(conn) };
+    std::thread::spawn(move || {
+        while let Some(s) = waker_receive.recv().unwrap() {
+            // TODO: Add a timeout!!!
+            unsafe { libpq::PQsocketPoll(socket, 1, 0, -1) };
+            s.wake();
+        }
+    });
 }
