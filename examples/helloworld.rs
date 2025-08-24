@@ -1,5 +1,3 @@
-#![allow(warnings)]
-
 use seedpq::connection::{Connection, connect};
 
 #[allow(dead_code)]
@@ -32,16 +30,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     c.exec("TRUNCATE TABLE posts CASCADE").unwrap().await;
     c.exec("TRUNCATE TABLE users CASCADE").unwrap().await;
     for n in 0..TIMES {
-        let result = c
-            .exec(
-                format!(
-                    "insert into users (name, hair_color) VALUES ('User {}', NULL)",
-                    n.to_string()
-                )
-                .as_str(),
+        c.exec(
+            format!(
+                "insert into users (name, hair_color) VALUES ('User {}', NULL)",
+                n.to_string()
             )
-            .unwrap()
-            .await;
+            .as_str(),
+        )
+        .unwrap()
+        .await;
     }
     let result: seedpq::query_result::QueryResult =
         c.exec("SELECT id, name, hair_color FROM users;")?.await;

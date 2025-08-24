@@ -46,7 +46,7 @@ impl QueryResult {
     >(
         &self,
     ) -> T {
-        core::array::from_fn(|column| self.fetch_cell::<'a>(0, column)).into()
+        core::array::from_fn(|column| self.fetch_cell(0, column)).into()
     }
 
     /// Fetches all first N columns and all the rows of the query result.
@@ -60,7 +60,7 @@ impl QueryResult {
         assert!(N <= unsafe { libpq::PQnfields(self.result) as usize });
         let row_count: usize = unsafe { libpq::PQntuples(self.result) } as usize;
         let mut result: Vec<T> = Vec::with_capacity(row_count);
-        for row in 0..N {
+        for _ in 0..N {
             result.push(self.fetch_one_unchecked());
         }
         result

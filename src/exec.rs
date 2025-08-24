@@ -24,6 +24,7 @@ impl Future for PendingQuery<'_> {
 }
 
 impl Connection {
+    // TODO: Fix whatever lifetime oopsie is going on here
     #[allow(mismatched_lifetime_syntaxes)]
     pub fn exec(&mut self, query: &str) -> Result<PendingQuery, ConnectionError> {
         if !self.ok {

@@ -74,7 +74,7 @@ pub struct PendingConnection {
 
 unsafe extern "C" fn blackhole_notice_receiver(
     _: *mut std::ffi::c_void,
-    pg_result: *const libpq::pg_result,
+    _pg_result: *const libpq::pg_result,
 ) {
     {}
 }
@@ -95,10 +95,7 @@ impl Future for PendingConnection {
             unsafe {
                 libpq::PQsetNoticeReceiver(conn.conn, Some(blackhole_notice_receiver), null_mut())
             };
-            std::task::Poll::Ready(Connection {
-                conn: conn,
-                ok: true,
-            })
+            std::task::Poll::Ready(Connection { conn, ok: true })
         } else if status == libpq::PostgresPollingStatusType::PGRES_POLLING_FAILED {
             self.waker_send.send(None).unwrap();
             std::task::Poll::Ready(Connection {
