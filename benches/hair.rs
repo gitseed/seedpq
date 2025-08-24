@@ -28,9 +28,18 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
     let runtime = tokio::runtime::Runtime::new().expect("Failed to create runtime");
     let mut c: Connection = runtime.block_on(async {
         let mut c: Connection = connect("postgres:///example").await;
-        c.exec("TRUNCATE TABLE comments CASCADE").unwrap().await;
-        c.exec("TRUNCATE TABLE posts CASCADE").unwrap().await;
-        c.exec("TRUNCATE TABLE users CASCADE").unwrap().await;
+        c.exec("TRUNCATE TABLE comments CASCADE")
+            .unwrap()
+            .await
+            .unwrap();
+        c.exec("TRUNCATE TABLE posts CASCADE")
+            .unwrap()
+            .await
+            .unwrap();
+        c.exec("TRUNCATE TABLE users CASCADE")
+            .unwrap()
+            .await
+            .unwrap();
         for n in 0..TIMES {
             c.exec(
                 format!(
@@ -40,7 +49,8 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
                 .as_str(),
             )
             .unwrap()
-            .await;
+            .await
+            .unwrap();
         }
         c
     });
@@ -50,7 +60,8 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
             let result: seedpq::query_result::QueryResult = c
                 .exec("SELECT id, name, hair_color FROM users")
                 .unwrap()
-                .await;
+                .await
+                .unwrap();
             result.fetch_all::<3, User>()
         })
     })

@@ -26,9 +26,9 @@ const TIMES: usize = 10;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut c: Connection = connect("postgres:///example").await;
-    c.exec("TRUNCATE TABLE comments CASCADE").unwrap().await;
-    c.exec("TRUNCATE TABLE posts CASCADE").unwrap().await;
-    c.exec("TRUNCATE TABLE users CASCADE").unwrap().await;
+    c.exec("TRUNCATE TABLE comments CASCADE")?.await?;
+    c.exec("TRUNCATE TABLE posts CASCADE")?.await?;
+    c.exec("TRUNCATE TABLE users CASCADE")?.await?;
     for n in 0..TIMES {
         c.exec(
             format!(
@@ -36,12 +36,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 n.to_string()
             )
             .as_str(),
-        )
-        .unwrap()
-        .await;
+        )?
+        .await?;
     }
     let result: seedpq::query_result::QueryResult =
-        c.exec("SELECT id, name, hair_color FROM users;")?.await;
+        c.exec("SELECT id, name, hair_color FROM users;")?.await?;
     let user: User = result.fetch_one::<3, User>();
     println!("{:?}", user);
     Ok(())

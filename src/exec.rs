@@ -11,21 +11,27 @@ pub struct PendingQuery<'a> {
 }
 
 impl Future for PendingQuery<'_> {
-    type Output = QueryResult;
+    type Output = Result<QueryResult, ConnectionError>;
 
     fn poll(
         mut self: std::pin::Pin<&mut Self>,
         _cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        if true {
-            // We can now call PQgetResult without blocking.
+        // From the docs: "PQisBusy will not itself attempt to read data from the server;
+        // therefore PQconsumeInput must be invoked first, or the busy state will never end."
+        if unsafe { libpq::PQconsumeInput(self.conn.raw()) } != 1 {
+            return std::task::Poll::Ready(Err(self.conn.error()));
+        };
+
+        // From the docs: "A 0 return indicates that PQgetResult can be called with assurance of not blocking."
+        if unsafe { libpq::PQisBusy(self.conn.raw()) } == 0 {
             // Because we're using PQsendQueryParams there should only be one pg_result followed by a nullptr.
             let raw_result: *mut libpq::pg_result = unsafe { libpq::PQgetResult(self.conn.raw()) };
             assert!(!raw_result.is_null());
             let expecting_null: *mut libpq::pg_result =
                 unsafe { libpq::PQgetResult(self.conn.raw()) };
             assert!(expecting_null.is_null());
-            std::task::Poll::Ready(QueryResult { result: raw_result })
+            std::task::Poll::Ready(Ok(QueryResult { result: raw_result }))
         } else {
             std::task::Poll::Pending
         }
