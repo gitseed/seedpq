@@ -4,7 +4,7 @@
 use crate::libpq;
 
 /// The private struct containing the raw C pointer to the postgres connection.
-/// The underlying unsafe libpq functions are access through impls on RawConnection.
+/// The underlying unsafe libpq functions that take a *mut PGconn are accessed through impls on RawConnection.
 /// We only want the underlying connection pointer to be used in a single thread.
 /// From the docs: "As of version 17, libpq is always reentrant and thread-safe.
 /// However, one restriction is that no two threads attempt to manipulate the same PGconn object at the same time.

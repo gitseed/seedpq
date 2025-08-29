@@ -42,7 +42,7 @@ pub fn connect(
 fn connection_event_loop(
     connection_string: String,
     request_recv: Receiver<PostgresRequest>,
-    result_send: Sender<Result<QueryResult, QueryError>>,
+    query_send: Sender<Result<QueryResult, QueryError>>,
     info_send: Sender<info::Info>,
     notice_send: Sender<String>,
 ) {
