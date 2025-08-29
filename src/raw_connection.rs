@@ -11,7 +11,7 @@ use crate::libpq;
 /// In particular, you cannot issue concurrent commands from different threads through the same connection object.
 /// (If you need to run concurrent commands, use multiple connections.)"
 /// This will be enforced by rust as *mut is already !Send and !Sync, and also we are not impl copy nor clone.
-struct RawConnection {
+pub(crate) struct RawConnection {
     conn: *mut libpq::PGconn,
 }
 
@@ -29,13 +29,14 @@ impl RawConnection {
     /// According to the docs this implies OOM:
     /// "Note that these functions will always return a non-null object pointer,
     /// unless perhaps there is too little memory even to allocate the PGconn object."
-    pub(crate) fn PQconnectdb(&mut self, conninfo: &str) {
+    pub(crate) fn PQconnectdb(conninfo: &str) -> Self {
         let conninfo = std::ffi::CString::new(conninfo)
             .expect("postgres connection strings should not contain internal nulls");
-        self.conn = unsafe { libpq::PQconnectdb(conninfo.into_raw()) };
+        let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectdb(conninfo.into_raw()) };
         assert!(
-            !self.conn.is_null(),
+            !conn.is_null(),
             "null pointer returned by libpq when attempting to connect to postgres"
         );
+        RawConnection { conn }
     }
 }

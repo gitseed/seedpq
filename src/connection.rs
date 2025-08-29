@@ -7,6 +7,7 @@ use crate::info;
 use crate::info::{Info, InfoReceiver};
 use crate::notice::NoticeReceiver;
 use crate::query::{QueryError, QueryReceiver, QueryResult};
+use crate::raw_connection::RawConnection;
 use crate::request::{PostgresRequest, RequestSender};
 
 /// Opens a postgres connecting using a connection string.
@@ -46,5 +47,15 @@ fn connection_event_loop(
     info_send: Sender<info::Info>,
     notice_send: Sender<String>,
 ) {
-    todo!()
+    let conn: RawConnection = RawConnection::PQconnectdb(&connection_string);
+    dbg!("Connection successful");
+
+    while let Ok(request) = request_recv.recv() {
+        match request {
+            PostgresRequest::Query(q) => {
+                dbg!(q);
+                query_send.send(Ok(QueryResult {}));
+            }
+        }
+    }
 }

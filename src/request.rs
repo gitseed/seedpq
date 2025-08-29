@@ -17,7 +17,9 @@ impl RequestSender {
     /// Sends the query string to postgres to be executed.
     /// Whether the execution is successful or not, the result will be sent to the QueryReceiver.
     /// If this ever panics file a bug report.
-    pub fn exec(&self, query: String) {
-        self.send.send(PostgresRequest::Query(query)).unwrap()
+    pub fn exec(&self, query: &str) {
+        self.send
+            .send(PostgresRequest::Query(String::from(query)))
+            .unwrap()
     }
 }
