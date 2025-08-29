@@ -39,4 +39,8 @@ impl RawConnection {
         );
         RawConnection { conn }
     }
+
+    pub(crate) fn PQstatus(&self) -> libpq::ConnStatusType {
+        unsafe { libpq::PQstatus(self.conn) }
+    }
 }

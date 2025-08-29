@@ -9,4 +9,6 @@ pub mod connection;
 pub mod info;
 pub mod notice;
 pub mod query;
+pub mod query_error;
+pub mod query_raw;
 pub mod request;

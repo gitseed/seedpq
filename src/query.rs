@@ -1,20 +1,24 @@
 use std::sync::mpsc::Receiver;
 
-use thiserror::Error;
+use crate::libpq;
+use crate::query_error::QueryError;
+use crate::query_raw::RawQueryResult;
 
-pub struct QueryResult {}
-
-#[derive(Error, Debug)]
-pub enum QueryError {}
+pub struct QueryResult<const N: usize> {
+    result: *mut libpq::PGresult,
+}
 
 /// Receives the results of queries sent to the connection.
 /// The methods of this struct will block.
 pub struct QueryReceiver {
-    pub(crate) recv: Receiver<Result<QueryResult, QueryError>>,
+    pub(crate) recv: Receiver<RawQueryResult>,
 }
 
 impl QueryReceiver {
-    pub fn get(&self) -> Result<QueryResult, QueryError> {
-        self.recv.recv().unwrap()
+    pub fn get<const N: usize>(&self) -> Result<QueryResult<N>, QueryError> {
+        match self.recv.recv() {
+            Ok(r) => r.unwrap(),
+            Err(e) => Err(QueryError::RecvError(e)),
+        }
     }
 }

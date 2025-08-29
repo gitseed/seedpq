@@ -6,9 +6,13 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 use crate::info;
 use crate::info::{Info, InfoReceiver};
 use crate::notice::NoticeReceiver;
-use crate::query::{QueryError, QueryReceiver, QueryResult};
+use crate::query::{QueryReceiver, QueryResult};
+use crate::query_error::QueryError;
+use crate::query_raw::RawQueryResult;
 use crate::raw_connection::RawConnection;
 use crate::request::{PostgresRequest, RequestSender};
+
+use crate::libpq::ConnStatusType;
 
 /// Opens a postgres connecting using a connection string.
 /// Connection strings are documented in 32.1.1. Connection Strings
@@ -17,7 +21,7 @@ pub fn connect(
     connection_string: &str,
 ) -> (RequestSender, QueryReceiver, InfoReceiver, NoticeReceiver) {
     let (request_send, request_recv) = channel::<PostgresRequest>();
-    let (query_send, query_recv) = channel::<Result<QueryResult, QueryError>>();
+    let (query_send, query_recv) = channel::<RawQueryResult>();
     let (info_send, info_recv) = channel::<info::Info>();
     let (notice_send, notice_recv) = channel::<String>();
     let connection_string = String::from(connection_string);
@@ -31,7 +35,6 @@ pub fn connect(
             notice_send,
         );
     });
-
     (
         RequestSender { send: request_send },
         QueryReceiver { recv: query_recv },
@@ -43,18 +46,23 @@ pub fn connect(
 fn connection_event_loop(
     connection_string: String,
     request_recv: Receiver<PostgresRequest>,
-    query_send: Sender<Result<QueryResult, QueryError>>,
+    query_send: Sender<RawQueryResult>,
     info_send: Sender<info::Info>,
     notice_send: Sender<String>,
 ) {
     let conn: RawConnection = RawConnection::PQconnectdb(&connection_string);
-    dbg!("Connection successful");
-
     while let Ok(request) = request_recv.recv() {
         match request {
             PostgresRequest::Query(q) => {
-                dbg!(q);
-                query_send.send(Ok(QueryResult {}));
+                if conn.PQstatus() != ConnStatusType::CONNECTION_OK {
+                    query_send.send(RawQueryResult {
+                        query: q,
+                        result: None,
+                        connection_error_message: Some(String::from("Connection error")),
+                    });
+                } else {
+                    todo!();
+                }
             }
         }
     }
