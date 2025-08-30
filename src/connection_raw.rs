@@ -18,9 +18,10 @@ pub(crate) struct SendableQueryResult {
 // The unwrapped type RawQueryResult is !Send, due to having a *mut and not being marked as unsafe impl Send.
 unsafe impl Send for SendableQueryResult {}
 
-impl SendableQueryResult {
-    pub(crate) fn unwrap(mut self) -> RawQueryResult {
-        // Can't actually panic, as it's only constructed with Some() and its only made None via consuming.
+// We don't want to define the from, because we don't want to give RawQueryResult visibility into SendableQueryResult.
+#[allow(clippy::from_over_into)]
+impl Into<RawQueryResult> for SendableQueryResult {
+    fn into(mut self) -> RawQueryResult {
         RawQueryResult {
             result: self.result.take().unwrap(),
         }

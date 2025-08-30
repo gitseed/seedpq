@@ -11,17 +11,28 @@ pub trait QueryResult<'a>: From<Array<Option<&'a [u8]>, Self::Columns>> {
 }
 
 impl<'a, T: QueryResult<'a>> QueryReceiver<T> {
-    pub fn fetch_one(&'a self) -> T {
-        Array::from_fn(|column| self.query_result_temp.fetch_cell(0, column)).into()
+    pub fn next(&'a mut self) -> Option<T> {
+        // Currently just returns one row ever...
+        match self.current_raw_query_result {
+            Some(_) => None, // TODO: Currently just returns one row ever...
+            None => {
+                let r: &mut RawQueryResult = self
+                    .current_raw_query_result
+                    .insert(self.recv.recv().unwrap().into());
+                Some(Array::from_fn(|column| r.fetch_cell(0, column)).into())
+            }
+        }
     }
 }
 
 /// Receives results from a single query, from the database connection thread.
-/// The methods of this struct may block.
+/// Implements Iterator for Result<T, Error>.
+/// The methods of this struct may block. Including next().
 #[derive(Debug)]
 pub struct QueryReceiver<T> {
     pub(crate) query: String,
     pub(crate) recv: Receiver<SendableQueryResult>,
     pub(crate) phantom: std::marker::PhantomData<T>,
-    pub(crate) query_result_temp: RawQueryResult,
+    pub(crate) current_raw_query_result: Option<RawQueryResult>,
+    pub(crate) current_row: usize,
 }
