@@ -3,6 +3,48 @@
 
 use crate::libpq;
 
+use crate::query_raw::RawQueryResult;
+
+/// Sendable query result type.
+/// Used to ensure that the underlying *mut libpq::PGresult is not utilized in multiple threads.
+pub(crate) struct SendableQueryResult {
+    /// Private! We only want SendableQueryResult being constructed by wrapper functions that would return *mut PGresult
+    result: Option<*mut libpq::PGresult>,
+}
+
+// SAFETY: We send the SendableQueryResult to the receiving end which unwraps into a RawQueryResult.
+// The underlying pointer is never used until during or after the SendableQueryResult is unwrapped.
+// Unwrap consumes the SendableQueryResult, so it can only be run once.
+// The unwrapped type RawQueryResult is !Send, due to having a *mut and not being marked as unsafe impl Send.
+unsafe impl Send for SendableQueryResult {}
+
+impl SendableQueryResult {
+    pub(crate) fn unwrap(mut self) -> RawQueryResult {
+        // Can't actually panic, as it's only constructed with Some() and its only made None via consuming.
+        RawQueryResult {
+            result: self.result.take().unwrap(),
+        }
+    }
+}
+
+impl Drop for SendableQueryResult {
+    fn drop(&mut self) {
+        match self.result {
+            None => (),
+            // Somehow the SendableQueryResult was dropped before it was unwrapped?
+            // This is for sure a bug in the library right?
+            // We panic in debug builds, but in release builds we PQclear and carry on.
+            Some(s) => {
+                debug_assert!(
+                    false,
+                    "SendableQueryResult dropped before being unwrapped, this is a bug in the library"
+                );
+                unsafe { libpq::PQclear(s) }
+            }
+        }
+    }
+}
+
 /// The private struct containing the raw C pointer to the postgres connection.
 /// The underlying unsafe libpq functions that take a *mut PGconn are accessed through impls on RawConnection.
 /// We only want the underlying connection pointer to be used in a single thread.
@@ -42,5 +84,15 @@ impl RawConnection {
 
     pub(crate) fn PQstatus(&self) -> libpq::ConnStatusType {
         unsafe { libpq::PQstatus(self.conn) }
+    }
+
+    pub(crate) fn PQexec(&self, command: &str) -> SendableQueryResult {
+        let command = std::ffi::CString::new(command)
+            .expect("postgres queries should not contain internal nulls");
+        unsafe {
+            SendableQueryResult {
+                result: Some(libpq::PQexec(self.conn, command.into_raw())),
+            }
+        }
     }
 }
