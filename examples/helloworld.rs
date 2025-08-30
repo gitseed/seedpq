@@ -34,6 +34,6 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     s.exec("SELECT version()");
     let version: seedpq::query::QueryReceiver<PostgresVersionInfo> =
         r.get::<PostgresVersionInfo>()?;
-    dbg!(version.fetch_one());
+    dbg!(version.fetch_one().info);
     Ok(())
 }
