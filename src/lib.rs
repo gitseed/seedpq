@@ -6,9 +6,12 @@ mod libpq;
 mod raw_connection;
 
 pub mod connection;
+pub mod connection_error;
 pub mod info;
 pub mod notice;
 pub mod query;
 pub mod query_error;
 pub mod query_raw;
+pub mod query_recv;
+pub mod query_recv_error;
 pub mod request;

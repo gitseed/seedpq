@@ -16,4 +16,4 @@ fn send_ten_thousand_queries(s: seedpq::request::RequestSender) {
     s.exec("SELECT version()");
 }
 
-fn receive_ten_thousand_results(_r: seedpq::query::QueryReceiver) {}
+fn receive_ten_thousand_results(_r: seedpq::query_recv::QueriesReceiver) {}
