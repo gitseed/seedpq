@@ -8,20 +8,20 @@ fn main() {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct User<'a> {
+struct User {
     id: i32,
-    name: &'a str,
-    hair_color: Option<&'a str>,
+    name: String,
+    hair_color: Option<String>,
 }
 
-impl<'a> From<[Option<&'a [u8]>; 3]> for User<'a> {
-    fn from(item: [Option<&'a [u8]>; 3]) -> Self {
-        User::<'a> {
+impl From<[Option<&[u8]>; 3]> for User {
+    fn from(item: [Option<&[u8]>; 3]) -> Self {
+        User {
             id: i32::from_be_bytes(item[0].unwrap().try_into().unwrap()),
-            name: str::from_utf8(item[1].unwrap()).unwrap(),
+            name: String::from_utf8_lossy(item[1].unwrap()).into_owned(),
             hair_color: match item[2] {
                 None => None,
-                Some(s) => Some(str::from_utf8(s).unwrap()),
+                Some(s) => Some(String::from_utf8_lossy(s).into_owned()),
             },
         }
     }
