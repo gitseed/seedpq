@@ -1,5 +1,6 @@
 //! Library entry point for seedpq. Just pub mod statements for now.
-#![allow(warnings)]
+// #![allow(warnings)]
+#![allow(dead_code)]
 
 /// The underlying libpq bit twiddling is kept away from library users.
 mod connection_raw;

@@ -1,7 +1,5 @@
 use crate::libpq;
 
-use crate::query_error::QueryError;
-
 /// A private struct containing the raw C pointer to a PGresult.
 /// Dropping this will call
 #[derive(Debug)]

@@ -6,10 +6,8 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 use crate::connection_error::ConnectionError;
 use crate::connection_raw::{RawConnection, SendableQueryResult};
 use crate::info;
-use crate::info::{Info, InfoReceiver};
+use crate::info::InfoReceiver;
 use crate::notice::NoticeReceiver;
-use crate::query_error::QueryError;
-use crate::query_raw::RawQueryResult;
 use crate::query_recv::QueriesReceiver;
 use crate::request::{PostgresRequest, RequestSender};
 
@@ -54,8 +52,8 @@ fn connection_event_loop(
         String,
         Result<Receiver<SendableQueryResult>, ConnectionError>,
     )>,
-    info_send: Sender<info::Info>,
-    notice_send: Sender<String>,
+    _info_send: Sender<info::Info>,
+    _notice_send: Sender<String>,
 ) {
     let conn: RawConnection = RawConnection::PQconnectdb(&connection_string);
     while let Ok(request) = request_recv.recv() {

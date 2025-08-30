@@ -3,7 +3,6 @@ use std::sync::mpsc::Receiver;
 use crate::connection_error::ConnectionError;
 use crate::connection_raw::SendableQueryResult;
 use crate::query::QueryReceiver;
-use crate::query_error::QueryError;
 use crate::query_recv_error::QueriesReceiverError;
 
 /// The receiving end of a database connection, that receives queries.

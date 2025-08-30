@@ -1,5 +1,3 @@
-use std::sync::mpsc;
-
 use thiserror::Error;
 
 use crate::libpq::ConnStatusType;

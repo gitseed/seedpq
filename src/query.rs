@@ -3,10 +3,7 @@ use std::sync::mpsc::Receiver;
 
 use hybrid_array::{Array, ArraySize};
 
-use crate::connection_error::ConnectionError;
 use crate::connection_raw::SendableQueryResult;
-use crate::libpq;
-use crate::query_error::QueryError;
 use crate::query_raw::RawQueryResult;
 
 pub trait QueryResult<'a>: From<Array<Option<&'a [u8]>, Self::Columns>> {
