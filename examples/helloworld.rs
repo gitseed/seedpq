@@ -16,24 +16,24 @@ struct PostgresVersionInfo {
     info: String,
 }
 
-impl<'a> seedpq::query::QueryResult<'a> for PostgresVersionInfo {
-    type Columns = U1;
-}
-
-impl<'a> From<Array<Option<&'a [u8]>, U1>> for PostgresVersionInfo {
-    fn from(data: Array<Option<&'a [u8]>, U1>) -> Self {
+impl From<Array<Option<&[u8]>, U1>> for PostgresVersionInfo {
+    fn from(data: Array<Option<&[u8]>, U1>) -> Self {
         PostgresVersionInfo {
             info: String::from_utf8_lossy(data.0[0].unwrap()).into_owned(),
         }
     }
 }
 
+// impl<'a> seedpq::query::QueryResult<'a> for PostgresVersionInfo {
+//     type Columns = U1;
+// }
+
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
 
-    s.exec("SELECT version()");
-    let mut version: seedpq::query::QueryReceiver<PostgresVersionInfo> =
-        r.get::<PostgresVersionInfo>()?;
-    dbg!(version.next().unwrap().info);
+    // s.exec("SELECT version()");
+    // let mut version: seedpq::query::QueryReceiver<PostgresVersionInfo> =
+    //     r.get::<PostgresVersionInfo>()?;
+    // dbg!(version.next().unwrap().info);
     Ok(())
 }
