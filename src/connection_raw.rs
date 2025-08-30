@@ -100,7 +100,8 @@ impl RawConnection {
     /// Will panic if the error message contains invalid utf8.
     pub(crate) fn PQerrorMessage(&self) -> String {
         // SAFETY: The memory of the error message is valid for the lifetime of the connection, and we copy it immediately.
-        let raw_error_message: &std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn)) };
+        let raw_error_message: &std::ffi::CStr =
+            unsafe { std::ffi::CStr::from_ptr(libpq::PQerrorMessage(self.conn)) };
         let mut result: String = String::from(raw_error_message.to_str().unwrap());
         // Postgres error messages have a trailing newline, which I don't like.
         result.pop();

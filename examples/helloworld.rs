@@ -3,7 +3,7 @@ use seedpq;
 fn main() {
     match _main() {
         Ok(_) => (),
-        Err(e) => println!("{}", e)
+        Err(e) => println!("{}", e),
     }
 }
 

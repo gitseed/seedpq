@@ -69,10 +69,13 @@ fn connection_event_loop(
                     _ = query_send.send((query, Ok(r)));
                     _ = s.send(exec_result);
                 } else {
-                    _ = query_send.send((query, Err(ConnectionError::ConnectionBad {
-                        status: connection_status,
-                        msg: conn.PQerrorMessage()
-                    })));
+                    _ = query_send.send((
+                        query,
+                        Err(ConnectionError::ConnectionBad {
+                            status: connection_status,
+                            msg: conn.PQerrorMessage(),
+                        }),
+                    ));
                 }
             }
         }
