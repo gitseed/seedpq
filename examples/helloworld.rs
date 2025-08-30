@@ -1,11 +1,14 @@
 use seedpq;
 
 fn main() {
-    _main().unwrap()
+    match _main() {
+        Ok(_) => (),
+        Err(e) => println!("{}", e)
+    }
 }
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
-    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+    let (s, r, _, _) = seedpq::connection::connect("postgres:///examplee");
 
     s.exec("SELECT version()");
     r.get::<3>()?;

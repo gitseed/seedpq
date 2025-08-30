@@ -62,13 +62,17 @@ fn connection_event_loop(
     while let Ok(request) = request_recv.recv() {
         match request {
             PostgresRequest::Query(query) => {
-                if conn.PQstatus() != ConnStatusType::CONNECTION_OK {
+                let connection_status: ConnStatusType = conn.PQstatus();
+                if connection_status == ConnStatusType::CONNECTION_OK {
                     let (s, r) = channel::<SendableQueryResult>();
                     let exec_result: SendableQueryResult = conn.PQexec(&query);
                     _ = query_send.send((query, Ok(r)));
                     _ = s.send(exec_result);
                 } else {
-                    _ = query_send.send((query, Err(ConnectionError::ConnectionBad)));
+                    _ = query_send.send((query, Err(ConnectionError::ConnectionBad {
+                        status: connection_status,
+                        msg: conn.PQerrorMessage()
+                    })));
                 }
             }
         }
