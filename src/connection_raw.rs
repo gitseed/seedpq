@@ -31,16 +31,11 @@ impl Drop for SendableQueryResult {
     fn drop(&mut self) {
         match self.result {
             None => (),
-            // Somehow the SendableQueryResult was dropped before it was unwrapped?
-            // This is for sure a bug in the library right?
-            // We panic in debug builds, but in release builds we PQclear and carry on.
-            Some(s) => {
-                debug_assert!(
-                    false,
-                    "SendableQueryResult dropped before being unwrapped, this is a bug in the library"
-                );
-                unsafe { libpq::PQclear(s) }
-            }
+            // The SendableQueryResult was dropped before it was unwrapped.
+            // This is likely to occur if you don't read the full results of a query.
+            // This is because all the results will be sent, whether or not they are received.
+            // This is simply how postgres works, it needs to finish reading one query before it goes on to the next query.
+            Some(s) => unsafe { libpq::PQclear(s) },
         }
     }
 }

@@ -17,10 +17,18 @@ pub struct QueriesReceiver {
 impl QueriesReceiver {
     /// Gets a QueryReceiver<T> that can be used to retrieve the results from a single query.
     /// This method blocks.
-    pub fn get<const N: usize>(&self) -> Result<QueryReceiver<N>, QueriesReceiverError> {
+    pub fn get<T>(&self) -> Result<QueryReceiver<T>, QueriesReceiverError> {
         match self.recv.recv() {
             Ok((query, r)) => match r {
-                Ok(recv) => Ok(QueryReceiver { query, recv }),
+                Ok(recv) => {
+                    let temp = recv.recv().unwrap().unwrap();
+                    Ok(QueryReceiver {
+                        query,
+                        recv,
+                        phantom: std::marker::PhantomData,
+                        query_result_temp: temp,
+                    })
+                }
                 Err(e) => Err(QueriesReceiverError::ConnectionError { query, e }),
             },
             Err(e) => Err(QueriesReceiverError::RecvError(e)),

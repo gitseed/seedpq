@@ -1,5 +1,9 @@
 use seedpq;
 
+use hybrid_array::typenum::U1;
+
+use hybrid_array::Array;
+
 fn main() {
     match _main() {
         Ok(_) => (),
@@ -7,16 +11,29 @@ fn main() {
     }
 }
 
+#[derive(Debug)]
+struct PostgresVersionInfo<'a> {
+    info: &'a str,
+}
+
+impl<'a> seedpq::query::QueryResult<'a> for PostgresVersionInfo<'a> {
+    type Columns = U1;
+}
+
+impl<'a> From<Array<Option<&'a [u8]>, U1>> for PostgresVersionInfo<'a> {
+    fn from(data: Array<Option<&'a [u8]>, U1>) -> Self {
+        PostgresVersionInfo {
+            info: str::from_utf8(data.0[0].unwrap()).unwrap(),
+        }
+    }
+}
+
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
-    let (s, r, _, _) = seedpq::connection::connect("postgres:///examplee");
+    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
 
     s.exec("SELECT version()");
-    r.get::<3>()?;
+    let version: seedpq::query::QueryReceiver<PostgresVersionInfo> =
+        r.get::<PostgresVersionInfo>()?;
+    dbg!(version.fetch_one());
     Ok(())
 }
-
-fn send_ten_thousand_queries(s: seedpq::request::RequestSender) {
-    s.exec("SELECT version()");
-}
-
-fn receive_ten_thousand_results(_r: seedpq::query_recv::QueriesReceiver) {}

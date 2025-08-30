@@ -8,7 +8,6 @@ use crate::connection_raw::{RawConnection, SendableQueryResult};
 use crate::info;
 use crate::info::{Info, InfoReceiver};
 use crate::notice::NoticeReceiver;
-use crate::query::PartialQueryResult;
 use crate::query_error::QueryError;
 use crate::query_raw::RawQueryResult;
 use crate::query_recv::QueriesReceiver;
