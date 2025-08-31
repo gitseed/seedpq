@@ -129,4 +129,32 @@ impl RawConnection {
         result.pop();
         result
     }
+
+    pub(crate) fn PQsetNoticeReceiver(
+        &self,
+        func: unsafe extern "C" fn(arg: *mut ::std::ffi::c_void, res: *const libpq::PGresult),
+        arg: *mut std::ffi::c_void,
+    ) {
+        unsafe { libpq::PQsetNoticeReceiver(self.conn, Some(func), arg) };
+    }
+}
+
+pub unsafe extern "C" fn custom_notice_receiver(
+    userdata: *mut std::ffi::c_void,
+    pg_result: *const libpq::PGresult,
+) {
+    {
+        // SAFETY: The memory of the error message is valid for the lifetime of the function call.
+        // We copy it immediately to an owned value.
+        // It's not documented, but we can see after calling the notice receiver function, that PGresult is cleared.
+        // https://github.com/postgres/postgres/blob/REL_17_6/src/interfaces/libpq/fe-exec.c#L980
+        // Therefore we should *NOT* call PGclear ourselves here!
+        let message: &std::ffi::CStr =
+            unsafe { std::ffi::CStr::from_ptr(libpq::PQresultErrorMessage(pg_result)) };
+        let message: String = message.to_string_lossy().into_owned();
+
+        // SAFETY: LOL idk prayge
+        let s: &std::sync::mpsc::Sender<String> = unsafe { std::mem::transmute(userdata) };
+        _ = s.send(message);
+    }
 }

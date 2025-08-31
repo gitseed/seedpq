@@ -6,6 +6,4 @@ use std::sync::mpsc::Receiver;
 /// since they do not imply failure of the query. Instead they are passed to a notice handling function,
 /// and execution continues normally after the handler returns."
 /// The methods of this struct will block.
-pub struct NoticeReceiver {
-    pub(crate) recv: Receiver<String>, // Notices are just text messages tbh.
-}
+pub struct NoticeReceiver(pub Receiver<String>);

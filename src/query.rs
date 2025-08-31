@@ -99,7 +99,7 @@ where
     }
 }
 
-pub struct EmptyResult {}
+pub struct EmptyResult;
 
 impl QueryResult<'_> for EmptyResult {
     type Columns = U0;

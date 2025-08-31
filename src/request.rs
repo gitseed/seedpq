@@ -20,7 +20,7 @@ impl RequestSender {
     /// todo: remove panic
     pub fn exec(&self, query: &str) {
         self.send
-            .send(PostgresRequest::Query(String::from(query)))
+            .send(PostgresRequest::Query(query.to_owned()))
             .unwrap()
     }
 }

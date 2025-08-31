@@ -4,7 +4,9 @@
 use std::sync::mpsc::{Receiver, Sender, channel};
 
 use crate::connection_error::ConnectionError;
-use crate::connection_raw::{ConnStatusType, RawConnection, SendableQueryResult};
+use crate::connection_raw::{
+    ConnStatusType, RawConnection, SendableQueryResult, custom_notice_receiver,
+};
 use crate::info;
 use crate::info::InfoReceiver;
 use crate::notice::NoticeReceiver;
@@ -24,7 +26,7 @@ pub fn connect(
     )>();
     let (info_send, info_recv) = channel::<info::Info>();
     let (notice_send, notice_recv) = channel::<String>();
-    let connection_string = String::from(connection_string);
+    let connection_string = connection_string.to_owned();
 
     std::thread::spawn(move || {
         connection_event_loop(
@@ -39,7 +41,7 @@ pub fn connect(
         RequestSender { send: request_send },
         QueriesReceiver { recv: query_recv },
         InfoReceiver { recv: info_recv },
-        NoticeReceiver { recv: notice_recv },
+        NoticeReceiver(notice_recv),
     )
 }
 
@@ -51,9 +53,16 @@ fn connection_event_loop(
         Result<Receiver<SendableQueryResult>, ConnectionError>,
     )>,
     _info_send: Sender<info::Info>,
-    _notice_send: Sender<String>,
+    mut notice_send: Sender<String>,
 ) {
     let conn: RawConnection = RawConnection::PQconnectdb(&connection_string);
+
+    let notice_send_ptr: *mut Sender<String> = &mut notice_send;
+    conn.PQsetNoticeReceiver(
+        custom_notice_receiver,
+        notice_send_ptr as *mut std::ffi::c_void,
+    );
+
     while let Ok(request) = request_recv.recv() {
         match request {
             PostgresRequest::Query(query) => {

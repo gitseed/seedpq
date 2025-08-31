@@ -78,7 +78,13 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
 }
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
-    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+    let (s, r, _, notice_receiver) = seedpq::connection::connect("postgres:///example");
+
+    std::thread::spawn(move || {
+        while let Ok(notice) = notice_receiver.0.recv() {
+            println!("postgres notice: {notice}");
+        }
+    });
 
     s.exec("TRUNCATE TABLE comments CASCADE");
     r.get::<seedpq::query::EmptyResult>()?;
