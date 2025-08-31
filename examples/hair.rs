@@ -86,10 +86,10 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    s.exec("TRUNCATE TABLE comments CASCADE");
+    s.exec("TRUNCATE TABLE comments CASCADE")?;
     r.get::<seedpq::query::EmptyResult>()?;
 
-    s.exec("select * from users limit 10");
+    s.exec("select * from users limit 10")?;
     let users: QueryReceiver<User> = r.get::<User>()?;
     let users: Vec<User> = users.collect::<Result<_, _>>()?;
     dbg!(users);

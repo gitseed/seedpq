@@ -1,5 +1,7 @@
 use std::sync::mpsc::Sender;
 
+use crate::request_error::RequestSenderError;
+
 /// Send queries or requests for info to the connection.
 /// The connection will send the results back in the same order of the requests.
 /// The methods of this struct do not block.
@@ -9,7 +11,7 @@ pub struct RequestSender {
 }
 
 /// The different types of requests that can be sent to postgres through a RequestSender.
-pub(crate) enum PostgresRequest {
+pub enum PostgresRequest {
     Query(String),
 }
 
@@ -18,9 +20,10 @@ impl RequestSender {
     /// Whether the execution is successful or not, the result will be sent to the QueryReceiver.
     /// Currently panics if the postgres thread hangs up, because I'm lazy.
     /// todo: remove panic
-    pub fn exec(&self, query: &str) {
-        self.send
-            .send(PostgresRequest::Query(query.to_owned()))
-            .unwrap()
+    pub fn exec(&self, query: &str) -> Result<(), RequestSenderError> {
+        match self.send.send(PostgresRequest::Query(query.to_owned())) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
     }
 }

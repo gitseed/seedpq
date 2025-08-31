@@ -29,7 +29,7 @@ impl QueriesReceiver {
                 }),
                 Err(e) => Err(QueriesReceiverError::ConnectionError { query, e }),
             },
-            Err(e) => Err(QueriesReceiverError::RecvError(e)),
+            Err(e) => Err(e.into()),
         }
     }
 }

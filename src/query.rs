@@ -24,7 +24,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.columns {
             None => match self.recv.recv() {
-                Err(e) => Some(Err(QueryError::RecvError(e))),
+                Err(e) => Some(Err(e.into())),
                 Ok(r) => {
                     let r: &mut RawQueryResult = self.current_raw_query_result.insert(r.into());
                     let status = r.PQresultStatus();

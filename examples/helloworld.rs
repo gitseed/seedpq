@@ -45,7 +45,7 @@ impl QueryResult<'_> for PostgresVersionInfo {
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
 
-    s.exec("SELECT version()");
+    s.exec("SELECT version()")?;
     let mut version: QueryReceiver<PostgresVersionInfo> = r.get::<PostgresVersionInfo>()?;
     println!("{}", version.next().unwrap().unwrap().info);
     Ok(())

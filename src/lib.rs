@@ -16,3 +16,4 @@ pub mod query_raw;
 pub mod query_recv;
 pub mod query_recv_error;
 pub mod request;
+pub mod request_error;
