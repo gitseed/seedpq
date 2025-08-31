@@ -28,7 +28,6 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
     type Error = QueryDataError;
 
     fn try_from(data: Array<Option<&[u8]>, U3>) -> Result<Self, Self::Error> {
-        // id: i32
         let id: i32 = match data.0[0] {
             None => Err(QueryDataError::UnexpectedNullError {
                 column: 0,
