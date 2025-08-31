@@ -35,6 +35,8 @@ impl RawQueryResult {
     }
 }
 
+pub type ExecStatusType = libpq::ExecStatusType;
+
 // Methods of RawQueryResult that are thing wrappers around methods on PQConn.
 impl RawQueryResult {
     pub(crate) fn PQgetisnull(&self, row: usize, column: usize) -> bool {
@@ -51,5 +53,18 @@ impl RawQueryResult {
 
     pub(crate) fn PQnfields(&self) -> usize {
         (unsafe { libpq::PQnfields(self.result) } as usize)
+    }
+
+    pub(crate) fn PQresultStatus(&self) -> ExecStatusType {
+        unsafe { libpq::PQresultStatus(self.result) }
+    }
+}
+
+/// Gets a static lifetime str from an ExecStatusType.
+/// While this can theoretically panic, in practice it won't unless your libpq library is corrupted or similar.
+pub(crate) fn PQresStatus(status: ExecStatusType) -> &'static str {
+    unsafe {
+        let raw: *mut std::ffi::c_char = libpq::PQresStatus(status);
+        std::ffi::CStr::from_ptr::<'static>(raw).to_str().unwrap()
     }
 }

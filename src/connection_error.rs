@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::libpq::ConnStatusType;
+use crate::connection_raw::ConnStatusType;
 
 #[derive(Error, Debug)]
 pub enum ConnectionError {

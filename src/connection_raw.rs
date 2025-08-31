@@ -65,27 +65,35 @@ impl Drop for RawConnection {
 impl RawConnection {
     /// Send a command to the database to be executed.
     /// Returns a SendableQueryResult wrapping the *mut PGResult.
+    /// Will panic if the *mut PGResult is null, as this implies an out of memory error according to the docs.
     pub(crate) fn exec(&self, command: &str) -> SendableQueryResult {
         let command = std::ffi::CString::new(command)
             .expect("postgres queries should not contain internal nulls");
-        unsafe {
-            SendableQueryResult {
-                result: Some(libpq::PQexecParams(
-                    self.conn,
-                    command.into_raw(),
-                    0,
-                    null(),
-                    null(),
-                    null(),
-                    null(),
-                    // Specify zero to obtain results in text format, or one to obtain results in binary format.
-                    // If you specify text format then numbers wil be sent in text form which is dumb.
-                    1,
-                )),
-            }
+        let result: *mut libpq::PGresult = unsafe {
+            libpq::PQexecParams(
+                self.conn,
+                command.into_raw(),
+                0,
+                null(),
+                null(),
+                null(),
+                null(),
+                // Specify zero to obtain results in text format, or one to obtain results in binary format.
+                // If you specify text format then numbers wil be sent in text form which is dumb.
+                1,
+            )
+        };
+        assert!(
+            !result.is_null(),
+            "null pointer returned by libpq for a PGresult, suggesting lack of RAM"
+        );
+        SendableQueryResult {
+            result: Some(result),
         }
     }
 }
+
+pub type ConnStatusType = libpq::ConnStatusType;
 
 // Methods of RawConnection that are thing wrappers around methods on PQConn.
 impl RawConnection {
@@ -102,7 +110,7 @@ impl RawConnection {
         let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectdb(conninfo.into_raw()) };
         assert!(
             !conn.is_null(),
-            "null pointer returned by libpq when attempting to connect to postgres"
+            "null pointer returned by libpq when attempting to connect to postgres, suggesting lack of RAM"
         );
         RawConnection { conn }
     }

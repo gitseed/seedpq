@@ -17,5 +17,5 @@ libpq based rust postgres library.
 seedpq has the following build dependencies that aren't well expressed in Cargo.toml
 
 * libpq version 17+, the C library. seedpq is built on top of libpq so libpq is required to be installed. We require version 17 or greater as we use the  PQsetChunkedRowsMode which was introduced in version 17.
-* openssl, the C library. libpq uses openssl for cryptography, so openssl is required to be intalled.
+* openssl, the C library. libpq uses openssl for cryptography, so openssl is required to be intalled. It must be a openssl version that is compatible with your libpq version.
 * pkg-config, the build tool. pkg-config the cli program is used by the crate pkg-config to determine where C libraries are located and pass that to cargo. If you don't have pkg-config installed or you don't want to use pkg-config for some reason, then you'll have to hack the build.rs file.

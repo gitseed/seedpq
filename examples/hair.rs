@@ -79,6 +79,10 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+
+    s.exec("TRUNCATE TABLE comments CASCADE");
+    r.get::<seedpq::query::EmptyResult>()?;
+
     s.exec("select * from users limit 10");
     let users: QueryReceiver<User> = r.get::<User>()?;
     let users: Vec<User> = users.collect::<Result<_, _>>()?;

@@ -25,6 +25,8 @@ pub enum QueryError {
         e: QueryDataError,
         query: String,
     },
+    #[error("PGresult had bad status {status}, for query:\n{query}")]
+    ResultStatusError { status: &'static str, query: String },
 }
 
 /// An error obtained while converting from a QueryResult<T> into a T.
