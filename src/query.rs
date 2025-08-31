@@ -22,7 +22,6 @@ where
     type Item = Result<T, QueryError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.current_row += 1;
         match self.columns {
             None => match self.recv.recv() {
                 Err(e) => Some(Err(QueryError::RecvError(e))),
@@ -53,6 +52,7 @@ where
                                         Array::from_fn(|column| {
                                             r.fetch_cell(self.current_row, column)
                                         });
+                                    self.current_row += 1;
                                     match T::try_from(data) {
                                         Ok(result) => Some(Ok(result)),
                                         Err(e) => Some(Err(QueryError::QueryDataError {
@@ -83,6 +83,7 @@ where
                         } else {
                             let data: Array<Option<&[u8]>, T::Columns> =
                                 Array::from_fn(|column| r.fetch_cell(self.current_row, column));
+                            self.current_row += 1;
                             match T::try_from(data) {
                                 Ok(result) => Some(Ok(result)),
                                 Err(e) => Some(Err(QueryError::QueryDataError {
