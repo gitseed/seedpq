@@ -1,4 +1,4 @@
-// We allow non_snake_case because it more convient to have the impls of RawConnection directly map to libpq functions.
+// We allow non_snake_case because it more convenient to have the impls of RawConnection directly map to libpq functions.
 #![allow(non_snake_case)]
 
 use crate::libpq;
@@ -61,6 +61,7 @@ impl Drop for RawConnection {
     }
 }
 
+// Custom methods of RawConnection.
 impl RawConnection {
     /// Send a command to the database to be executed.
     /// Returns a SendableQueryResult wrapping the *mut PGResult.
@@ -86,6 +87,7 @@ impl RawConnection {
     }
 }
 
+// Methods of RawConnection that are thing wrappers around methods on PQConn.
 impl RawConnection {
     /// Makes a new connection to the database server.
     /// Blocks until the connection succeeds or fails. This can take minutes.

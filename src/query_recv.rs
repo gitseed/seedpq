@@ -25,6 +25,7 @@ impl QueriesReceiver {
                     phantom: std::marker::PhantomData,
                     current_raw_query_result: None,
                     current_row: 0,
+                    columns: None,
                 }),
                 Err(e) => Err(QueriesReceiverError::ConnectionError { query, e }),
             },
