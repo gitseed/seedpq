@@ -93,5 +93,8 @@ pub struct QueryReceiver<T> {
     pub(crate) phantom: std::marker::PhantomData<T>,
     pub(crate) current_raw_query_result: Option<RawQueryResult>,
     pub(crate) current_row: usize,
-    pub(crate) columns: Option<usize>, // If this is none that means nothing has been fetched yet.
+    // If this is none that means nothing has been fetched yet.
+    // This is the number of columns actually returned by the query.
+    // This may be a different value than what T is expecting.
+    pub(crate) columns: Option<usize>,
 }

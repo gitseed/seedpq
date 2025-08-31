@@ -9,15 +9,17 @@ use thiserror::Error;
 pub enum QueryError {
     #[error("postgres connection thread unexpectedly hung up")]
     RecvError(#[from] mpsc::RecvError),
-    #[error("insufficent columns returned by query {query}\nexpected {expected}, found {found})")]
+    #[error(
+        "insufficient columns returned by query, expected {expected} found {found}, query:\n{query}"
+    )]
     InsufficientColumnsError {
         query: String,
         expected: usize,
         found: usize,
     },
-    #[error("connection error while executing {query}\n{msg}")]
+    #[error("connection error while executing query:\n{query}\n{msg}")]
     ConnectionError { query: String, msg: String },
-    #[error("error converting the results of {query} into a rust type")]
+    #[error("error converting query results into a rust type, query:\n{query}")]
     QueryDataError {
         #[source]
         e: QueryDataError,
