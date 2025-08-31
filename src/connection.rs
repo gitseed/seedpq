@@ -62,7 +62,7 @@ fn connection_event_loop(
                 let connection_status: ConnStatusType = conn.PQstatus();
                 if connection_status == ConnStatusType::CONNECTION_OK {
                     let (s, r) = channel::<SendableQueryResult>();
-                    let exec_result: SendableQueryResult = conn.PQexec(&query);
+                    let exec_result: SendableQueryResult = conn.exec(&query);
                     _ = query_send.send((query, Ok(r)));
                     _ = s.send(exec_result);
                 } else {

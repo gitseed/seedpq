@@ -10,7 +10,7 @@ pub enum QueryError {
     #[error("postgres connection thread unexpectedly hung up")]
     RecvError(#[from] mpsc::RecvError),
     #[error("insufficent columns returned by query {query}\nexpected {expected}, found {found})")]
-    InsufficientColumns {
+    InsufficientColumnsError {
         query: String,
         expected: usize,
         found: usize,
@@ -40,4 +40,14 @@ pub enum QueryDataError {
     },
     #[error("while converting to {t}, column {column} is not nullable, but a null was found")]
     UnexpectedNullError { t: &'static str, column: usize },
+    #[error(
+        "while converting column {column} to {t}, expected {numsize} bytes, got {slicesize} bytes"
+    )]
+    WrongSizeNumericError {
+        t: &'static str,
+        e: std::array::TryFromSliceError,
+        column: usize,
+        numsize: usize,
+        slicesize: usize,
+    },
 }

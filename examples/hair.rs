@@ -13,6 +13,7 @@ fn main() {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct User {
     id: i32,
     name: String,
@@ -27,17 +28,61 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
     type Error = QueryDataError;
 
     fn try_from(data: Array<Option<&[u8]>, U3>) -> Result<Self, Self::Error> {
-        todo!()
+        // id: i32
+        let id: i32 = match data.0[0] {
+            None => Err(QueryDataError::UnexpectedNullError {
+                column: 0,
+                t: std::any::type_name::<User>(),
+            }),
+            Some(data) => match <[u8; size_of::<i32>()]>::try_from(data) {
+                Ok(arr) => Ok(i32::from_be_bytes(arr)),
+                Err(e) => Err(QueryDataError::WrongSizeNumericError {
+                    t: std::any::type_name::<i32>(),
+                    e,
+                    column: 0,
+                    numsize: size_of::<i32>(),
+                    slicesize: data.len(),
+                }),
+            },
+        }?;
+        let name: String = match data.0[1] {
+            None => Err(QueryDataError::UnexpectedNullError {
+                column: 1,
+                t: std::any::type_name::<User>(),
+            }),
+            Some(data) => match str::from_utf8(data) {
+                Ok(s) => Ok(s.to_owned()),
+                Err(e) => Err(QueryDataError::Utf8Error {
+                    e,
+                    column: 1,
+                    t: std::any::type_name::<User>(),
+                }),
+            },
+        }?;
+        let hair_color: Option<String> = match data.0[2] {
+            None => Ok(None),
+            Some(data) => match str::from_utf8(data) {
+                Ok(s) => Ok(Some(s.to_owned())),
+                Err(e) => Err(QueryDataError::Utf8Error {
+                    e,
+                    column: 2,
+                    t: std::any::type_name::<User>(),
+                }),
+            },
+        }?;
+        Ok(User {
+            id,
+            name,
+            hair_color,
+        })
     }
 }
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
-
     s.exec("select * from users limit 10");
-    let mut users: QueryReceiver<User> = r.get::<User>()?;
-
+    let users: QueryReceiver<User> = r.get::<User>()?;
     let users: Vec<User> = users.collect::<Result<_, _>>()?;
-
+    dbg!(users);
     Ok(())
 }
