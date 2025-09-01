@@ -8,6 +8,30 @@ use crate::libpq;
 
 use thiserror::Error;
 
+impl Connection {
+    pub fn exec_sync(&mut self, query: &str) -> QueryResult {
+        let ffi_query: std::ffi::CString = std::ffi::CString::new(query)
+            .expect("postgres queries can not contain null characters");
+
+        let result: *mut libpq::pg_result = unsafe {
+            libpq::PQexecParams(
+                self.raw(),
+                ffi_query.as_ptr(),
+                0,
+                null(),
+                null(),
+                null(),
+                null(),
+                // Specify zero to obtain results in text format, or one to obtain results in binary format.
+                // If you specify text format then numbers wil be sent in text form which is dumb.
+                1,
+            )
+        };
+
+        QueryResult { result }
+    }
+}
+
 /// This *is* exhuastive. You either get a error before you get the PGresult, or you get a dud PGresult.
 #[derive(Error, Debug)]
 pub enum ExecError {
