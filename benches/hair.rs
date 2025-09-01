@@ -4,6 +4,7 @@ use hybrid_array::Array;
 use hybrid_array::typenum::U3;
 
 use seedpq;
+use seedpq::query::QueryReceiver;
 use seedpq::query::QueryResult;
 use seedpq::query_error::QueryDataError;
 
@@ -75,9 +76,9 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
 pub fn bench_trivial_seed(b: &mut Bencher) {
     const TIMES: usize = 10000;
 
-    (|| -> Result<(), Box<dyn std::error::Error>> {
-        let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
 
+    (|| -> Result<(), Box<dyn std::error::Error>> {
         s.exec("TRUNCATE TABLE comments CASCADE")?;
         r.get::<seedpq::query::EmptyResult>()?;
         s.exec("TRUNCATE TABLE posts CASCADE")?;
@@ -103,7 +104,11 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
     })()
     .unwrap();
 
-    b.iter(|| todo!("procrastination"))
+    b.iter(|| {
+        s.exec("SELECT id, name, hair_color FROM users").unwrap();
+        let users: QueryReceiver<User> = r.get::<User>().unwrap();
+        users.collect::<Result<Vec<User>, _>>().unwrap()
+    })
 }
 
 fn bench_trivial_query(c: &mut Criterion) {

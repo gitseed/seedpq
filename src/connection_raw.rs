@@ -155,6 +155,7 @@ pub unsafe extern "C" fn custom_notice_receiver(
 
         // SAFETY: LOL idk prayge.
         // If there's a better way to do this let me know.
+        // I don't trust clippy here. Won't clippy's suggestion have the thing be dropped?
         #[allow(clippy::transmute_ptr_to_ref)]
         let s: &std::sync::mpsc::Sender<String> = unsafe { std::mem::transmute(userdata) };
         _ = s.send(message);
