@@ -153,7 +153,9 @@ pub unsafe extern "C" fn custom_notice_receiver(
             unsafe { std::ffi::CStr::from_ptr(libpq::PQresultErrorMessage(pg_result)) };
         let message: String = message.to_string_lossy().into_owned();
 
-        // SAFETY: LOL idk prayge
+        // SAFETY: LOL idk prayge.
+        // If there's a better way to do this let me know.
+        #[allow(clippy::transmute_ptr_to_ref)]
         let s: &std::sync::mpsc::Sender<String> = unsafe { std::mem::transmute(userdata) };
         _ = s.send(message);
     }
