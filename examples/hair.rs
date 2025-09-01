@@ -103,14 +103,17 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     ))?;
     r.get::<seedpq::query::EmptyResult>()?;
 
-    benchmark_me(s, r)?;
+    for _  in 0..10000 {
+        benchmark_me(&s, &r)?;
+    }
+    
 
     Ok(())
 }
 
 const TIMES: usize = 10000;
 
-fn benchmark_me(s: RequestSender, r: QueriesReceiver) -> Result<(), Box<dyn std::error::Error>> {
+fn benchmark_me(s: &RequestSender, r: &QueriesReceiver) -> Result<(), Box<dyn std::error::Error>> {
     s.exec("SELECT id, name, hair_color FROM users")?;
     let users: QueryReceiver<User> = r.get::<User>()?;
     users.collect::<Result<Vec<User>, _>>()?;
