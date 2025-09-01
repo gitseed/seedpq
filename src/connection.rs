@@ -120,6 +120,20 @@ pub fn connect(connection_string: &str) -> PendingConnection {
     }
 }
 
+pub fn connect_sync(connection_string: &str) -> Connection {
+    let raw_conninfo: *mut std::ffi::c_char = std::ffi::CString::new(connection_string)
+        .expect("postgres connection info should not contain internal null characters")
+        .into_raw();
+    let conn: *mut libpq::pg_conn = unsafe { libpq::PQconnectdb(raw_conninfo) };
+
+    unsafe { libpq::PQsetNoticeReceiver(conn, Some(blackhole_notice_receiver), null_mut()) };
+
+    Connection {
+        ok: true,
+        conn: RawConnection { conn },
+    }
+}
+
 /// Spawns a thread that blocks until it recieves a waker from supplied channel.
 /// Once the spawned thread recieves the waiter, it blocks until the socket of the provided connection is ready for writing.
 /// Once the socket is ready for writing, it will call wakeup on the Waker that it recieved earlier.

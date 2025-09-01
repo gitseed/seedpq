@@ -1,5 +1,5 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
-use seedpq::connection::{Connection, connect};
+use seedpq::connection::{Connection, connect_sync};
 
 use futures::executor;
 
@@ -27,7 +27,7 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
     const TIMES: usize = 10000;
 
     let mut c: Connection = executor::block_on(async {
-        let mut c: Connection = connect("postgres:///example").await;
+        let mut c: Connection = connect_sync("postgres:///example");
         c.exec("TRUNCATE TABLE comments CASCADE")
             .unwrap()
             .await
