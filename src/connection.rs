@@ -3,6 +3,8 @@
 
 use std::sync::mpsc::{Receiver, Sender, channel};
 
+use crate::libpq;
+
 use crate::connection_error::ConnectionError;
 use crate::connection_raw::{
     ConnStatusType, RawConnection, SendableQueryResult, custom_notice_receiver,
@@ -69,9 +71,33 @@ fn connection_event_loop(
                 let connection_status: ConnStatusType = conn.PQstatus();
                 if connection_status == ConnStatusType::CONNECTION_OK {
                     let (s, r) = channel::<SendableQueryResult>();
-                    let exec_result: SendableQueryResult = conn.exec(&query);
-                    _ = query_send.send((query, Ok(r)));
-                    _ = s.send(exec_result);
+                    match conn.PQsendQuery(&query) {
+                        true => {
+                            loop {
+                                let socket: std::ffi::c_int = unsafe { libpq::PQsocket(conn.conn) };
+                                // Snooze until the socket is ready for reading.
+                                unsafe { libpq::PQsocketPoll(socket, 1, 0, -1) };
+
+                                // Consume input lol.
+                                unsafe { libpq::PQconsumeInput(conn.conn) };
+
+                                // Returns 1 if a command is busy, that is, PQgetResult would block waiting for input.
+                                // A 0 return indicates that PQgetResult can be called with assurance of not blocking.
+                                if unsafe { libpq::PQisBusy(conn.conn) } == 0 {
+                                    let result = conn.PQgetResult().unwrap();
+
+                                    _ = query_send.send((query, Ok(r)));
+                                    _ = s.send(result);
+
+                                    conn.PQgetResult();
+                                    break;
+                                } else {
+                                    continue;
+                                }
+                            }
+                        }
+                        false => todo!(),
+                    }
                 } else {
                     _ = query_send.send((
                         query,

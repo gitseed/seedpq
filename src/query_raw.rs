@@ -7,7 +7,6 @@ use crate::libpq;
 /// Dropping this will call
 #[derive(Debug)]
 pub(crate) struct RawQueryResult {
-    /// Private! We only want SendableQueryResult being constructed by wrapper functions that would return *mut PGresult
     pub(crate) result: *mut libpq::PGresult,
 }
 
