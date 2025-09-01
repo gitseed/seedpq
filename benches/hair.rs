@@ -113,7 +113,7 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
 
 fn bench_trivial_query(c: &mut Criterion) {
     let mut group = c.benchmark_group("bench_trivial_query");
-    group.bench_function("seed", bench_trivial_seed);
+    group.bench_function("channels", bench_trivial_seed);
 }
 
 criterion_group!(benches, bench_trivial_query);

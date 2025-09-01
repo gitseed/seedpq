@@ -4,7 +4,7 @@
 
 /// The underlying libpq bit twiddling is kept away from library users.
 mod connection_raw;
-mod libpq;
+pub mod libpq;
 
 pub mod connection;
 pub mod connection_error;

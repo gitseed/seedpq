@@ -22,3 +22,11 @@ bench = false
 [[bench]]
 name = "hair"
 harness = false
+
+[[bench]]
+name = "baseline"
+harness = false
+
+[[bench]]
+name = "tinker"
+harness = false
