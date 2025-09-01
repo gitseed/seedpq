@@ -1,3 +1,5 @@
+use crate::seedpq::query_recv::QueriesReceiver;
+use crate::seedpq::request::RequestSender;
 use hybrid_array::Array;
 use hybrid_array::typenum::U3;
 use seedpq;
@@ -78,20 +80,39 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
 }
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
-    let (s, r, _, notice_receiver) = seedpq::connection::connect("postgres:///example");
-
-    std::thread::spawn(move || {
-        while let Ok(notice) = notice_receiver.0.recv() {
-            println!("postgres notice: {notice}");
-        }
-    });
+    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
 
     s.exec("TRUNCATE TABLE comments CASCADE")?;
     r.get::<seedpq::query::EmptyResult>()?;
+    s.exec("TRUNCATE TABLE posts CASCADE")?;
+    r.get::<seedpq::query::EmptyResult>()?;
+    s.exec("TRUNCATE TABLE users CASCADE")?;
+    r.get::<seedpq::query::EmptyResult>()?;
 
-    s.exec("select * from users limit 10")?;
+    let mut values: String = String::new();
+    for n in 0..TIMES {
+        values.push_str("('User ");
+        values.push_str(n.to_string().as_str());
+        values.push_str("', NULL),");
+    }
+    // Remove the trailing comma.
+    values.pop();
+    s.exec(&format!(
+        "insert into users (name, hair_color) VALUES {}",
+        values
+    ))?;
+    r.get::<seedpq::query::EmptyResult>()?;
+
+    benchmark_me(s, r)?;
+
+    Ok(())
+}
+
+const TIMES: usize = 10000;
+
+fn benchmark_me(s: RequestSender, r: QueriesReceiver) -> Result<(), Box<dyn std::error::Error>> {
+    s.exec("SELECT id, name, hair_color FROM users")?;
     let users: QueryReceiver<User> = r.get::<User>()?;
-    let users: Vec<User> = users.collect::<Result<_, _>>()?;
-    dbg!(users);
+    users.collect::<Result<Vec<User>, _>>()?;
     Ok(())
 }
