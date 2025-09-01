@@ -8,8 +8,8 @@ use thiserror::Error;
 /// The private struct containing the raw C pointer to the postgres connection.
 /// Has some implementations that apply to connections regardless of state.
 /// Most notably drop, which will call PQFinish on the connection.
-struct RawConnection {
-    conn: *mut libpq::PGconn,
+pub struct RawConnection {
+    pub conn: *mut libpq::PGconn,
 }
 
 impl Drop for RawConnection {
@@ -20,7 +20,7 @@ impl Drop for RawConnection {
 
 /// Represents a connection that's either established, or failed.
 pub struct Connection {
-    conn: RawConnection,
+    pub conn: RawConnection,
     pub(crate) ok: bool,
 }
 

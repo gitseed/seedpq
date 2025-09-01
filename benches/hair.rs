@@ -26,7 +26,7 @@ impl From<[Option<&[u8]>; 3]> for User {
 pub fn bench_trivial_seed(b: &mut Bencher) {
     const TIMES: usize = 10000;
 
-    let mut c: Connection = executor::block_on(async {
+    let c: Connection = executor::block_on(async {
         let mut c: Connection = connect_sync("postgres:///example");
         c.exec("TRUNCATE TABLE comments CASCADE")
             .unwrap()
@@ -57,9 +57,22 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
     });
 
     b.iter(|| {
-        let result: seedpq::query_result::QueryResult =
-            c.exec_sync("SELECT id, name, hair_color FROM users");
-        result.fetch_all::<3, User>()
+        let query: &'static str = "SELECT id, name, hair_color FROM users";
+        let ffi_query: std::ffi::CString = std::ffi::CString::new(query).unwrap();
+        unsafe {
+            seedpq::libpq::PQexecParams(
+                c.conn.conn,
+                ffi_query.as_ptr(),
+                0,
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null(),
+                // Specify zero to obtain results in text format, or one to obtain results in binary format.
+                // If you specify text format then numbers wil be sent in text form which is dumb.
+                1,
+            )
+        };
     })
 }
 
