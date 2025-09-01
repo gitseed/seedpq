@@ -74,7 +74,7 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
 }
 
 pub fn bench_trivial_seed(b: &mut Bencher) {
-    const TIMES: usize = 10000;
+    const TIMES: usize = 1000000;
 
     let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
 

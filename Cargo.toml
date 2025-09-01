@@ -20,7 +20,7 @@ crate-type = ["lib"]
 bench = false
 
 [[bench]]
-name = "hair"
+name = "channels"
 harness = false
 
 [[bench]]
