@@ -57,11 +57,9 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
     });
 
     b.iter(|| {
-        executor::block_on(async {
-            let result: seedpq::query_result::QueryResult = c
-                .exec_sync("SELECT id, name, hair_color FROM users");
-            result.fetch_all::<3, User>()
-        })
+        let result: seedpq::query_result::QueryResult =
+            c.exec_sync("SELECT id, name, hair_color FROM users");
+        result.fetch_all::<3, User>()
     })
 }
 
