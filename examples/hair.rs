@@ -103,9 +103,10 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     ))?;
     r.get::<seedpq::query::EmptyResult>()?;
 
-    for _ in 0..10000 {
+    for _  in 0..10000 {
         benchmark_me(&s, &r)?;
     }
+    
 
     Ok(())
 }

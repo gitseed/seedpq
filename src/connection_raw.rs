@@ -9,8 +9,10 @@ use std::ptr::null;
 
 /// Sendable query result type.
 /// Used to ensure that the underlying *mut libpq::PGresult is not utilized in multiple threads.
-/// /// Private! We only want SendableQueryResult being constructed by wrapper functions that would return *mut PGresult
-pub(crate) struct SendableQueryResult(pub(crate) Option<*mut libpq::PGresult>);
+pub(crate) struct SendableQueryResult {
+    /// Private! We only want SendableQueryResult being constructed by wrapper functions that would return *mut PGresult
+    result: Option<*mut libpq::PGresult>,
+}
 
 // SAFETY: We send the SendableQueryResult to the receiving end which unwraps into a RawQueryResult.
 // The underlying pointer is never used until during or after the SendableQueryResult is unwrapped.
@@ -23,14 +25,14 @@ unsafe impl Send for SendableQueryResult {}
 impl Into<RawQueryResult> for SendableQueryResult {
     fn into(mut self) -> RawQueryResult {
         RawQueryResult {
-            result: self.0.take().unwrap(),
+            result: self.result.take().unwrap(),
         }
     }
 }
 
 impl Drop for SendableQueryResult {
     fn drop(&mut self) {
-        match self.0 {
+        match self.result {
             None => (),
             // The SendableQueryResult was dropped before it was unwrapped.
             // This is likely to occur if you don't read the full results of a query.
@@ -50,12 +52,44 @@ impl Drop for SendableQueryResult {
 /// (If you need to run concurrent commands, use multiple connections.)"
 /// This will be enforced by rust as *mut is already !Send and !Sync, and also we are not impl copy nor clone.
 pub(crate) struct RawConnection {
-    pub(crate) conn: *mut libpq::PGconn,
+    conn: *mut libpq::PGconn,
 }
 
 impl Drop for RawConnection {
     fn drop(&mut self) {
         unsafe { libpq::PQfinish(self.conn) }
+    }
+}
+
+// Custom methods of RawConnection.
+impl RawConnection {
+    /// Send a command to the database to be executed.
+    /// Returns a SendableQueryResult wrapping the *mut PGResult.
+    /// Will panic if the *mut PGResult is null, as this implies an out of memory error according to the docs.
+    pub(crate) fn exec(&self, command: &str) -> SendableQueryResult {
+        let command = std::ffi::CString::new(command)
+            .expect("postgres queries should not contain internal nulls");
+        let result: *mut libpq::PGresult = unsafe {
+            libpq::PQexecParams(
+                self.conn,
+                command.into_raw(),
+                0,
+                null(),
+                null(),
+                null(),
+                null(),
+                // Specify zero to obtain results in text format, or one to obtain results in binary format.
+                // If you specify text format then numbers wil be sent in text form which is dumb.
+                1,
+            )
+        };
+        assert!(
+            !result.is_null(),
+            "null pointer returned by libpq for a PGresult, suggesting lack of RAM"
+        );
+        SendableQueryResult {
+            result: Some(result),
+        }
     }
 }
 
@@ -102,64 +136,6 @@ impl RawConnection {
         arg: *mut std::ffi::c_void,
     ) {
         unsafe { libpq::PQsetNoticeReceiver(self.conn, Some(func), arg) };
-    }
-
-    pub(crate) fn PQsendQuery(&self, command: &str) -> bool {
-        let command = std::ffi::CString::new(command)
-            .expect("postgres queries should not contain internal nulls");
-
-        let result: i32 = unsafe {
-            libpq::PQsendQueryParams(
-                self.conn,
-                command.into_raw(),
-                0,
-                null(),
-                null(),
-                null(),
-                null(),
-                // Specify zero to obtain results in text format, or one to obtain results in binary format.
-                // If you specify text format then numbers wil be sent in text form which is dumb.
-                1,
-            )
-        };
-
-        // "Submits a command to the server without waiting for the result(s).
-        // 1 is returned if the command was successfully dispatched and 0 if not
-        // (in which case, use PQerrorMessage to get more information about the failure)."
-        result == 1
-    }
-
-    pub(crate) fn PQgetResult(&self) -> Option<SendableQueryResult> {
-        let result: *mut libpq::pg_result = unsafe { libpq::PQgetResult(self.conn) };
-        if result.is_null() {
-            None
-        } else {
-            Some(SendableQueryResult(Some(result)))
-        }
-    }
-
-    pub(crate) fn PQexecParams(&self, command: &str) -> SendableQueryResult {
-        let command = std::ffi::CString::new(command)
-            .expect("postgres queries should not contain internal nulls");
-        let result: *mut libpq::PGresult = unsafe {
-            libpq::PQexecParams(
-                self.conn,
-                command.into_raw(),
-                0,
-                null(),
-                null(),
-                null(),
-                null(),
-                // Specify zero to obtain results in text format, or one to obtain results in binary format.
-                // If you specify text format then numbers wil be sent in text form which is dumb.
-                1,
-            )
-        };
-        assert!(
-            !result.is_null(),
-            "null pointer returned by libpq for a PGresult, suggesting lack of RAM"
-        );
-        SendableQueryResult(Some(result))
     }
 }
 
