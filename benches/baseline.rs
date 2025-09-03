@@ -4,7 +4,6 @@ pub struct Connection(*mut libpq::PGconn);
 impl Drop for Connection {
     fn drop(&mut self) {
         unsafe { libpq::PQfinish(self.0) }
-        std::thread::sleep(std::time::Duration::from_micros(10000));
     }
 }
 pub fn bench_trivial_seed(b: &mut Bencher) {
