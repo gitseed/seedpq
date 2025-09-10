@@ -28,7 +28,7 @@ fn bench_trivial_seed(b: &mut Bencher) {
             );
             libpq::PQclear(result);
         },
-        criterion::BatchSize::SmallInput,
+        criterion::BatchSize::LargeInput,
     )
 }
 
