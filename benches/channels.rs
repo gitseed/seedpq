@@ -8,6 +8,23 @@ use seedpq::query::QueryReceiver;
 use seedpq::query::QueryResult;
 use seedpq::query_error::QueryDataError;
 
+pub fn get_insert_query() -> std::ffi::CString {
+    const TIMES: usize = 10000;
+    let mut values: String = String::new();
+    for n in 0..TIMES {
+        values.push_str("('User ");
+        values.push_str(n.to_string().as_str());
+        values.push_str("', NULL),");
+    }
+    // Remove the trailing comma.
+    values.pop();
+
+    std::ffi::CString::new(
+        format!("insert into users (name, hair_color) VALUES {}", values).as_str(),
+    )
+    .unwrap()
+}
+
 #[derive(Debug)]
 #[allow(dead_code)]
 struct User {
@@ -74,41 +91,26 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
 }
 
 pub fn bench_trivial_seed(b: &mut Bencher) {
-    const TIMES: usize = 10000;
-
-    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
-
-    (|| -> Result<(), Box<dyn std::error::Error>> {
-        s.exec("TRUNCATE TABLE comments CASCADE")?;
-        r.get::<seedpq::query::EmptyResult>()?;
-        s.exec("TRUNCATE TABLE posts CASCADE")?;
-        r.get::<seedpq::query::EmptyResult>()?;
-        s.exec("TRUNCATE TABLE users CASCADE")?;
-        r.get::<seedpq::query::EmptyResult>()?;
-
-        let mut values: String = String::new();
-        for n in 0..TIMES {
-            values.push_str("('User ");
-            values.push_str(n.to_string().as_str());
-            values.push_str("', NULL),");
-        }
-        // Remove the trailing comma.
-        values.pop();
-        s.exec(&format!(
-            "insert into users (name, hair_color) VALUES {}",
-            values
-        ))?;
-        r.get::<seedpq::query::EmptyResult>()?;
-
-        Ok(())
-    })()
-    .unwrap();
-
-    b.iter(|| {
-        s.exec("SELECT id, name, hair_color FROM users").unwrap();
-        let users: QueryReceiver<User> = r.get::<User>().unwrap();
-        users.collect::<Result<Vec<User>, _>>().unwrap()
-    })
+    b.iter_batched(
+        || {
+            let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+            s.exec("TRUNCATE TABLE comments CASCADE").unwrap();
+            r.get::<seedpq::query::EmptyResult>().unwrap();
+            s.exec("TRUNCATE TABLE posts CASCADE").unwrap();
+            r.get::<seedpq::query::EmptyResult>().unwrap();
+            s.exec("TRUNCATE TABLE users CASCADE").unwrap();
+            r.get::<seedpq::query::EmptyResult>().unwrap();
+            s.exec(get_insert_query().to_str().unwrap()).unwrap();
+            r.get::<seedpq::query::EmptyResult>().unwrap();
+            (s, r)
+        },
+        |(s, r)| {
+            s.exec("SELECT id, name, hair_color FROM users").unwrap();
+            let users: QueryReceiver<User> = r.get::<User>().unwrap();
+            users.collect::<Result<Vec<User>, _>>().unwrap()
+        },
+        criterion::BatchSize::PerIteration,
+    )
 }
 
 fn bench_trivial_query(c: &mut Criterion) {
