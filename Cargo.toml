@@ -10,9 +10,9 @@ thiserror = "2.0.16"
 
 [dev-dependencies]
 criterion = "0.5"
-tokio = { version = "1.47.1", features = ["rt", "rt-multi-thread"] }
+tokio = { version = "1.47.1", features = ["full"] }
 tokio-postgres = "0.7.13"
-wtx = { version = "0.36.1", features = ["postgres", "getrandom"] }
+wtx = { git = "https://github.com/c410-f3r/wtx.git", features = ["postgres", "getrandom", "tokio"] }
 rand_chacha = { features = ["os_rng"], version = "0.9" }
 
 [build-dependencies]

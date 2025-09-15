@@ -1,7 +1,12 @@
 #![allow(warnings)]
 
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
+use tokio::io::AsyncReadExt;
+use wtx::database::client::postgres::ExecutorBuffer;
+use wtx::database::client::postgres::PostgresExecutor;
+use wtx::database::Executor;
 use wtx::rng::SeedableRng;
+use wtx::stream::{StreamReader, StreamWriter};
 
 pub fn get_insert_query() -> std::ffi::CString {
     const TIMES: usize = 10000;
@@ -20,40 +25,45 @@ pub fn get_insert_query() -> std::ffi::CString {
     .unwrap()
 }
 
+
 pub async fn executor_postgres(
     uri_str: &str,
 ) -> wtx::Result<
     wtx::database::client::postgres::PostgresExecutor<
         wtx::Error,
         wtx::database::client::postgres::ExecutorBuffer,
-        tokio::net::TcpStream,
+        tokio::net::UnixStream,
     >,
 > {
     let uri = wtx::misc::Uri::new(uri_str);
     let mut rng = wtx::rng::ChaCha20::from_os().unwrap();
     let config = wtx::database::client::postgres::Config::from_uri(&uri).unwrap();
-    let eb = wtx::database::client::postgres::ExecutorBuffer::new(usize::MAX, &mut rng);
-    let stream = tokio::net::TcpStream::connect(uri.hostname_with_implied_port())
-        .await
-        .unwrap();
+    let eb: wtx::database::client::postgres::ExecutorBuffer =
+        wtx::database::client::postgres::ExecutorBuffer::new(usize::MAX, &mut rng);
+    let stream: tokio::net::UnixStream = tokio::net::UnixStream::connect("/tmp/.s.PGSQL.5432").await.unwrap();
 
-    wtx::database::client::postgres::PostgresExecutor::connect(&config, eb, &mut rng, stream);
-    todo!()
+    Ok(PostgresExecutor::connect(&config, eb, &mut rng, stream)
+        .await
+        .unwrap())
 }
 
 fn bench_trivial_wtx(b: &mut Bencher) {
     b.iter_batched(
         || {
             let rt: tokio::runtime::Runtime = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                // wtx_instances::executor_postgres("postgres:///example").await?;
+            let e = rt.block_on(async {
+                let mut e = executor_postgres("postgres:///example").await.unwrap();
+                e.execute_with_stmt("TRUNCATE TABLE comments CASCADE", ()).await.unwrap();
+                e.execute_with_stmt("TRUNCATE TABLE posts CASCADE", ()).await.unwrap();
+                e.execute_with_stmt("TRUNCATE TABLE users CASCADE", ()).await.unwrap();
+                e.execute_with_stmt(get_insert_query().to_str().unwrap(), ()).await.unwrap();
             });
-            todo!();
-            todo!()
+            (rt, e)
         },
-        |args| {
-            todo!();
-            todo!()
+        |(rt, mut e)| {
+            rt.block_on( async {
+                e.execute_with_stmt("SELECT id, name, hair_color FROM users", ());
+            })
         },
         criterion::BatchSize::PerIteration,
     )
