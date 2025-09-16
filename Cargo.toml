@@ -28,7 +28,7 @@ name = "channels"
 harness = false
 
 [[bench]]
-name = "baseline"
+name = "libpq"
 harness = false
 
 [[bench]]

@@ -1,30 +1,10 @@
-#![allow(warnings)]
-
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
-use tokio::io::AsyncReadExt;
-use wtx::database::client::postgres::ExecutorBuffer;
 use wtx::database::client::postgres::PostgresExecutor;
-use wtx::database::Executor;
+use wtx::database::{Executor, Record, Records};
 use wtx::rng::SeedableRng;
-use wtx::stream::{StreamReader, StreamWriter};
 
-pub fn get_insert_query() -> std::ffi::CString {
-    const TIMES: usize = 10000;
-    let mut values: String = String::new();
-    for n in 0..TIMES {
-        values.push_str("('User ");
-        values.push_str(n.to_string().as_str());
-        values.push_str("', NULL),");
-    }
-    // Remove the trailing comma.
-    values.pop();
-
-    std::ffi::CString::new(
-        format!("insert into users (name, hair_color) VALUES {}", values).as_str(),
-    )
-    .unwrap()
-}
-
+#[path = "common.rs"]
+mod common;
 
 pub async fn executor_postgres(
     uri_str: &str,
@@ -40,7 +20,9 @@ pub async fn executor_postgres(
     let config = wtx::database::client::postgres::Config::from_uri(&uri).unwrap();
     let eb: wtx::database::client::postgres::ExecutorBuffer =
         wtx::database::client::postgres::ExecutorBuffer::new(usize::MAX, &mut rng);
-    let stream: tokio::net::UnixStream = tokio::net::UnixStream::connect("/tmp/.s.PGSQL.5432").await.unwrap();
+    let stream: tokio::net::UnixStream = tokio::net::UnixStream::connect("/tmp/.s.PGSQL.5432")
+        .await
+        .unwrap();
 
     Ok(PostgresExecutor::connect(&config, eb, &mut rng, stream)
         .await
@@ -52,17 +34,42 @@ fn bench_trivial_wtx(b: &mut Bencher) {
         || {
             let rt: tokio::runtime::Runtime = tokio::runtime::Runtime::new().unwrap();
             let e = rt.block_on(async {
-                let mut e = executor_postgres("postgres:///example").await.unwrap();
-                e.execute_with_stmt("TRUNCATE TABLE comments CASCADE", ()).await.unwrap();
-                e.execute_with_stmt("TRUNCATE TABLE posts CASCADE", ()).await.unwrap();
-                e.execute_with_stmt("TRUNCATE TABLE users CASCADE", ()).await.unwrap();
-                e.execute_with_stmt(get_insert_query().to_str().unwrap(), ()).await.unwrap();
+                // I had to put a password even though unix socket auth doesn't use a password.
+                // I have to put localhost even though it's not actually connecting over the network.
+                let mut e = executor_postgres("postgres://paul:notrealpassword@localhost/example")
+                    .await
+                    .unwrap();
+                e.execute_with_stmt("TRUNCATE TABLE comments CASCADE", ())
+                    .await
+                    .unwrap();
+                e.execute_with_stmt("TRUNCATE TABLE posts CASCADE", ())
+                    .await
+                    .unwrap();
+                e.execute_with_stmt("TRUNCATE TABLE users CASCADE", ())
+                    .await
+                    .unwrap();
+                e.execute_with_stmt(common::get_insert_query().to_str().unwrap(), ())
+                    .await
+                    .unwrap();
+                e
             });
             (rt, e)
         },
         |(rt, mut e)| {
-            rt.block_on( async {
-                e.execute_with_stmt("SELECT id, name, hair_color FROM users", ()).await.unwrap();
+            rt.block_on(async {
+                let data = e
+                    .fetch_many_with_stmt("SELECT id, name, hair_color FROM users", (), |_| {
+                        Ok::<_, wtx::Error>(())
+                    })
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    data.get(0)
+                        .as_ref()
+                        .and_then(|record| Some(record.decode("name").unwrap())),
+                    Some("User 0")
+                );
+                assert_eq!(data.len(), 10000);
             })
         },
         criterion::BatchSize::PerIteration,
