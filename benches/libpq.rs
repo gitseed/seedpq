@@ -1,7 +1,7 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 use seedpq::libpq;
 
-#[path = "common.rs"]
+#[path = "common/common.rs"]
 mod common;
 
 pub struct Connection(*mut libpq::PGconn);

@@ -3,7 +3,7 @@ use wtx::database::client::postgres::PostgresExecutor;
 use wtx::database::{Executor, Record, Records};
 use wtx::rng::SeedableRng;
 
-#[path = "common.rs"]
+#[path = "common/common.rs"]
 mod common;
 
 pub async fn executor_postgres(
@@ -32,26 +32,14 @@ pub async fn executor_postgres(
 fn bench_trivial_wtx(b: &mut Bencher) {
     b.iter_batched(
         || {
+            common::setup_data();
             let rt: tokio::runtime::Runtime = tokio::runtime::Runtime::new().unwrap();
             let e = rt.block_on(async {
                 // I had to put a password even though unix socket auth doesn't use a password.
                 // I have to put localhost even though it's not actually connecting over the network.
-                let mut e = executor_postgres("postgres://paul:notrealpassword@localhost/example")
+                executor_postgres("postgres://paul:notrealpassword@localhost/example")
                     .await
-                    .unwrap();
-                e.execute_with_stmt("TRUNCATE TABLE comments CASCADE", ())
-                    .await
-                    .unwrap();
-                e.execute_with_stmt("TRUNCATE TABLE posts CASCADE", ())
-                    .await
-                    .unwrap();
-                e.execute_with_stmt("TRUNCATE TABLE users CASCADE", ())
-                    .await
-                    .unwrap();
-                e.execute_with_stmt(common::get_insert_query().to_str().unwrap(), ())
-                    .await
-                    .unwrap();
-                e
+                    .unwrap()
             });
             (rt, e)
         },

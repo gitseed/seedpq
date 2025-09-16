@@ -8,6 +8,9 @@ use seedpq::query::QueryReceiver;
 use seedpq::query::QueryResult;
 use seedpq::query_error::QueryDataError;
 
+#[path = "common/common.rs"]
+mod common;
+
 pub fn get_insert_query() -> std::ffi::CString {
     const TIMES: usize = 10000;
     let mut values: String = String::new();
@@ -93,15 +96,8 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
 pub fn bench_trivial_seed(b: &mut Bencher) {
     b.iter_batched(
         || {
+            common::setup_data();
             let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
-            s.exec("TRUNCATE TABLE comments CASCADE").unwrap();
-            r.get::<seedpq::query::EmptyResult>().unwrap();
-            s.exec("TRUNCATE TABLE posts CASCADE").unwrap();
-            r.get::<seedpq::query::EmptyResult>().unwrap();
-            s.exec("TRUNCATE TABLE users CASCADE").unwrap();
-            r.get::<seedpq::query::EmptyResult>().unwrap();
-            s.exec(get_insert_query().to_str().unwrap()).unwrap();
-            r.get::<seedpq::query::EmptyResult>().unwrap();
             (s, r)
         },
         |(s, r)| {

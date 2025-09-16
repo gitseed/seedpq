@@ -32,5 +32,9 @@ name = "libpq"
 harness = false
 
 [[bench]]
+name = "tokio_postgres"
+harness = false
+
+[[bench]]
 name = "wtx"
 harness = false
