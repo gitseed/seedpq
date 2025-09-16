@@ -19,9 +19,9 @@ fn bench_trivial_tokio_postgres(b: &mut Bencher) {
                 tokio::spawn(async move { connection.await.unwrap() });
                 client
             });
-            (rt, client)
+            (client, rt)
         },
-        |(rt, client)| {
+        |(client, rt)| {
             rt.block_on(async {
                 client
                     .execute("SELECT id, name, hair_color FROM users", &[])

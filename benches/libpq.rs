@@ -15,7 +15,21 @@ fn bench_trivial_libpq(b: &mut Bencher) {
     b.iter_batched(
         || {
             common::setup_data();
-            Connection(unsafe { libpq::PQconnectdb(c"postgres:///example".as_ptr()) })
+            let c = Connection(unsafe { libpq::PQconnectdb(c"postgres:///example".as_ptr()) });
+            unsafe {
+                let result: *mut libpq::pg_result = libpq::PQexecParams(
+                    c.0,
+                    c"select version()".as_ptr(),
+                    0,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    1,
+                );
+                libpq::PQclear(result);
+            };
+            c
         },
         |c| unsafe {
             let result: *mut libpq::pg_result = libpq::PQexecParams(
