@@ -62,7 +62,7 @@ fn bench_trivial_wtx(b: &mut Bencher) {
         },
         |(rt, mut e)| {
             rt.block_on( async {
-                e.execute_with_stmt("SELECT id, name, hair_color FROM users", ());
+                e.execute_with_stmt("SELECT id, name, hair_color FROM users", ()).await.unwrap();
             })
         },
         criterion::BatchSize::PerIteration,
