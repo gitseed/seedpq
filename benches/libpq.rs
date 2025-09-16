@@ -34,7 +34,6 @@ fn bench_trivial_libpq(b: &mut Bencher) {
     )
 }
 
-
 fn bench_trivial_query(c: &mut Criterion) {
     let mut group = c.benchmark_group("bench_trivial_query");
     group.bench_function("trivial_libpq", bench_trivial_libpq);
