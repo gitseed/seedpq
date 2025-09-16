@@ -88,9 +88,24 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
         },
         |(s, r)| {
             s.exec("SELECT id, name, hair_color FROM users").unwrap();
-            let _users: QueryReceiver<User> = r.get::<User>().unwrap();
-            // users.collect::<Result<Vec<User>, _>>().unwrap()
+            let users: QueryReceiver<User> = r.get::<User>().unwrap();
+            users.collect::<Result<Vec<User>, _>>().unwrap()
         },
+        criterion::BatchSize::PerIteration,
+    )
+}
+
+pub fn bench_trivial_seed_process_only(b: &mut Bencher) {
+    b.iter_batched(
+        || {
+            common::setup_data();
+            let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+            s.exec("select version()").unwrap();
+            r.get::<EmptyResult>().unwrap();
+            s.exec("SELECT id, name, hair_color FROM users").unwrap();
+            r.get::<User>().unwrap()
+        },
+        |users| users.collect::<Result<Vec<User>, _>>().unwrap(),
         criterion::BatchSize::PerIteration,
     )
 }
@@ -98,6 +113,7 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
 fn bench_trivial_query(c: &mut Criterion) {
     let mut group = c.benchmark_group("bench_trivial_query");
     group.bench_function("channels", bench_trivial_seed);
+    group.bench_function("channels_only_process", bench_trivial_seed_process_only);
 }
 
 criterion_group!(benches, bench_trivial_query);
