@@ -781,6 +781,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "postgres"
+version = "0.19.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "363e6dfbdd780d3aa3597b6eb430db76bb315fa9bad7fae595bb8def808b8470"
+dependencies = [
+ "bytes",
+ "fallible-iterator",
+ "futures-util",
+ "log",
+ "tokio",
+ "tokio-postgres",
+]
+
+[[package]]
 name = "postgres-protocol"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -987,6 +1001,7 @@ dependencies = [
  "hybrid-array 0.3.1",
  "libc",
  "pkg-config",
+ "postgres",
  "rand_chacha",
  "thiserror",
  "tokio",

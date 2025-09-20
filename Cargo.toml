@@ -14,6 +14,7 @@ tokio = { version = "1.47.1", features = ["full"] }
 tokio-postgres = "0.7.13"
 wtx = { git = "https://github.com/c410-f3r/wtx.git", features = ["postgres", "getrandom", "tokio"] }
 rand_chacha = { features = ["os_rng"], version = "0.9" }
+postgres = "0.19.10"
 
 [build-dependencies]
 pkg-config = "0.3.32"
@@ -24,17 +25,13 @@ crate-type = ["lib"]
 bench = false
 
 [[bench]]
-name = "channels"
-harness = false
-
-[[bench]]
-name = "libpq"
-harness = false
-
-[[bench]]
-name = "tokio_postgres"
+name = "seedpq"
 harness = false
 
 [[bench]]
 name = "wtx"
+harness = false
+
+[[bench]]
+name = "sfackler_postgres"
 harness = false

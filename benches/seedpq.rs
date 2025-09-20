@@ -77,7 +77,7 @@ impl TryFrom<Array<Option<&[u8]>, U3>> for User {
     }
 }
 
-pub fn bench_trivial_seed(b: &mut Bencher) {
+pub fn bench_trivial_seedpq(b: &mut Bencher) {
     b.iter_batched(
         || {
             common::setup_data();
@@ -89,31 +89,17 @@ pub fn bench_trivial_seed(b: &mut Bencher) {
         |(s, r)| {
             s.exec("SELECT id, name, hair_color FROM users").unwrap();
             let users: QueryReceiver<User> = r.get::<User>().unwrap();
-            users.collect::<Result<Vec<User>, _>>().unwrap()
+            let result: Vec<User> = users.collect::<Result<Vec<User>, _>>().unwrap();
+            assert_eq!(result.len(), 10000);
+            result
         },
-        criterion::BatchSize::PerIteration,
-    )
-}
-
-pub fn bench_trivial_seed_process_only(b: &mut Bencher) {
-    b.iter_batched(
-        || {
-            common::setup_data();
-            let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
-            s.exec("select version()").unwrap();
-            r.get::<EmptyResult>().unwrap();
-            s.exec("SELECT id, name, hair_color FROM users").unwrap();
-            r.get::<User>().unwrap()
-        },
-        |users| users.collect::<Result<Vec<User>, _>>().unwrap(),
         criterion::BatchSize::PerIteration,
     )
 }
 
 fn bench_trivial_query(c: &mut Criterion) {
     let mut group = c.benchmark_group("bench_trivial_query");
-    group.bench_function("channels", bench_trivial_seed);
-    group.bench_function("channels_only_process", bench_trivial_seed_process_only);
+    group.bench_function("seedpq", bench_trivial_seedpq);
 }
 
 criterion_group!(benches, bench_trivial_query);

@@ -6,6 +6,14 @@ use wtx::rng::SeedableRng;
 #[path = "common/common.rs"]
 mod common;
 
+#[derive(Debug)]
+#[allow(dead_code)]
+struct User {
+    id: i32,
+    name: String,
+    hair_color: Option<String>,
+}
+
 pub async fn executor_postgres(
     uri_str: &str,
 ) -> wtx::Result<
@@ -51,13 +59,15 @@ fn bench_trivial_wtx(b: &mut Bencher) {
                     })
                     .await
                     .unwrap();
-                assert_eq!(
-                    data.get(0)
-                        .as_ref()
-                        .and_then(|record| Some(record.decode("name").unwrap())),
-                    Some("User 0")
-                );
-                assert_eq!(data.len(), 10000);
+                let result: Vec<User> = data
+                    .iter()
+                    .map(|record| User {
+                        id: record.decode("id").unwrap(),
+                        name: record.decode("name").unwrap(),
+                        hair_color: record.decode_opt("hair_color").unwrap(),
+                    })
+                    .collect();
+                result
             })
         },
         criterion::BatchSize::PerIteration,
@@ -66,7 +76,7 @@ fn bench_trivial_wtx(b: &mut Bencher) {
 
 fn bench_trivial_query(c: &mut Criterion) {
     let mut group = c.benchmark_group("bench_trivial_query");
-    group.bench_function("trivial_wtx", bench_trivial_wtx);
+    group.bench_function("wtx", bench_trivial_wtx);
 }
 criterion_group!(benches, bench_trivial_query);
 criterion_main!(benches);
