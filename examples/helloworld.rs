@@ -40,9 +40,7 @@ impl TryFrom<Array<Option<&[u8]>, U1>> for PostgresVersionInfo {
 
 impl QueryResult<'_> for PostgresVersionInfo {
     type Columns = U1;
-    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array([
-        "version",
-    ]);
+    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array(["version"]);
 }
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {

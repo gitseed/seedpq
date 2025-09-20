@@ -17,7 +17,9 @@ pub enum QueryError {
         expected: usize,
         found: usize,
     },
-    #[error("column name mismatch in query result, for column {column_number} expected label {expected} found label {found}, query:\n{query}")]
+    #[error(
+        "column name mismatch in query result, for column {column_number} expected label {expected} found label {found}, query:\n{query}"
+    )]
     ColumnNameMismatchError {
         query: String,
         column_number: usize,

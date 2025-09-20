@@ -7,42 +7,6 @@ use crate::query_raw::RawQueryResult;
 
 use std::ptr::null;
 
-/// Sendable query result type.
-/// Used to ensure that the underlying *mut libpq::PGresult is not utilized in multiple threads.
-pub(crate) struct SendableQueryResult {
-    /// Private! We only want SendableQueryResult being constructed by wrapper functions that would return *mut PGresult
-    result: Option<*mut libpq::PGresult>,
-}
-
-// SAFETY: We send the SendableQueryResult to the receiving end which unwraps into a RawQueryResult.
-// The underlying pointer is never used until during or after the SendableQueryResult is unwrapped.
-// Unwrap consumes the SendableQueryResult, so it can only be run once.
-// The unwrapped type RawQueryResult is !Send, due to having a *mut and not being marked as unsafe impl Send.
-unsafe impl Send for SendableQueryResult {}
-
-// We don't want to define the from, because we don't want to give RawQueryResult visibility into SendableQueryResult.
-#[allow(clippy::from_over_into)]
-impl Into<RawQueryResult> for SendableQueryResult {
-    fn into(mut self) -> RawQueryResult {
-        RawQueryResult {
-            result: self.result.take().unwrap(),
-        }
-    }
-}
-
-impl Drop for SendableQueryResult {
-    fn drop(&mut self) {
-        match self.result {
-            None => (),
-            // The SendableQueryResult was dropped before it was unwrapped.
-            // This is likely to occur if you don't read the full results of a query.
-            // This is because all the results will be sent, whether or not they are received.
-            // This is simply how postgres works, it needs to finish reading one query before it goes on to the next query.
-            Some(s) => unsafe { libpq::PQclear(s) },
-        }
-    }
-}
-
 /// The private struct containing the raw C pointer to the postgres connection.
 /// The underlying unsafe libpq functions that take a *mut PGconn are accessed through impls on RawConnection.
 /// We only want the underlying connection pointer to be used in a single thread.
@@ -64,9 +28,9 @@ impl Drop for RawConnection {
 // Custom methods of RawConnection.
 impl RawConnection {
     /// Send a command to the database to be executed.
-    /// Returns a SendableQueryResult wrapping the *mut PGResult.
+    /// Returns a RawQueryResult wrapping the *mut PGResult.
     /// Will panic if the *mut PGResult is null, as this implies an out of memory error according to the docs.
-    pub(crate) fn exec(&self, command: &str) -> SendableQueryResult {
+    pub(crate) fn exec(&self, command: &str) -> RawQueryResult {
         let command = std::ffi::CString::new(command)
             .expect("postgres queries should not contain internal nulls");
         let result: *mut libpq::PGresult = unsafe {
@@ -87,9 +51,7 @@ impl RawConnection {
             !result.is_null(),
             "null pointer returned by libpq for a PGresult, suggesting lack of RAM"
         );
-        SendableQueryResult {
-            result: Some(result),
-        }
+        RawQueryResult::new(result)
     }
 }
 

@@ -4,12 +4,11 @@
 use std::sync::mpsc::{Receiver, Sender, channel};
 
 use crate::connection_error::ConnectionError;
-use crate::connection_raw::{
-    ConnStatusType, RawConnection, SendableQueryResult, custom_notice_receiver,
-};
+use crate::connection_raw::{ConnStatusType, RawConnection, custom_notice_receiver};
 use crate::info;
 use crate::info::InfoReceiver;
 use crate::notice::NoticeReceiver;
+use crate::query_raw::RawQueryResult;
 use crate::query_recv::QueriesReceiver;
 use crate::request::{PostgresRequest, RequestSender};
 
@@ -20,10 +19,8 @@ pub fn connect(
     connection_string: &str,
 ) -> (RequestSender, QueriesReceiver, InfoReceiver, NoticeReceiver) {
     let (request_send, request_recv) = channel::<PostgresRequest>();
-    let (query_send, query_recv) = channel::<(
-        String,
-        Result<Receiver<SendableQueryResult>, ConnectionError>,
-    )>();
+    let (query_send, query_recv) =
+        channel::<(String, Result<Receiver<RawQueryResult>, ConnectionError>)>();
     let (info_send, info_recv) = channel::<info::Info>();
     let (notice_send, notice_recv) = channel::<String>();
     let connection_string = connection_string.to_owned();
@@ -48,10 +45,7 @@ pub fn connect(
 fn connection_event_loop(
     connection_string: String,
     request_recv: Receiver<PostgresRequest>,
-    query_send: Sender<(
-        String,
-        Result<Receiver<SendableQueryResult>, ConnectionError>,
-    )>,
+    query_send: Sender<(String, Result<Receiver<RawQueryResult>, ConnectionError>)>,
     _info_send: Sender<info::Info>,
     mut notice_send: Sender<String>,
 ) {
@@ -68,8 +62,8 @@ fn connection_event_loop(
             PostgresRequest::Query(query) => {
                 let connection_status: ConnStatusType = conn.PQstatus();
                 if connection_status == ConnStatusType::CONNECTION_OK {
-                    let (s, r) = channel::<SendableQueryResult>();
-                    let exec_result: SendableQueryResult = conn.exec(&query);
+                    let (s, r) = channel::<RawQueryResult>();
+                    let exec_result: RawQueryResult = conn.exec(&query);
                     _ = query_send.send((query, Ok(r)));
                     _ = s.send(exec_result);
                 } else {

@@ -1,16 +1,13 @@
 use std::sync::mpsc::Receiver;
 
 use crate::connection_error::ConnectionError;
-use crate::connection_raw::SendableQueryResult;
 use crate::query::QueryReceiver;
+use crate::query_raw::RawQueryResult;
 use crate::query_recv_error::QueriesReceiverError;
 
 /// The receiving end of a database connection, that receives queries.
 pub struct QueriesReceiver {
-    pub(crate) recv: Receiver<(
-        String,
-        Result<Receiver<SendableQueryResult>, ConnectionError>,
-    )>,
+    pub(crate) recv: Receiver<(String, Result<Receiver<RawQueryResult>, ConnectionError>)>,
 }
 
 impl QueriesReceiver {

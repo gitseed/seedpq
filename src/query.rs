@@ -5,7 +5,6 @@ use hybrid_array::typenum::U0;
 use hybrid_array::typenum::Unsigned;
 use hybrid_array::{Array, ArraySize};
 
-use crate::connection_raw::SendableQueryResult;
 use crate::query_error::{QueryDataError, QueryError};
 use crate::query_raw::{ExecStatusType, PQresStatus, RawQueryResult};
 
@@ -27,7 +26,7 @@ where
             None => match self.recv.recv() {
                 Err(e) => Some(Err(e.into())),
                 Ok(r) => {
-                    let r: &mut RawQueryResult = self.current_raw_query_result.insert(r.into());
+                    let r: &mut RawQueryResult = self.current_raw_query_result.insert(r);
                     let status = r.PQresultStatus();
                     match status {
                         ExecStatusType::PGRES_COMMAND_OK
@@ -42,9 +41,11 @@ where
                                     found: *columns,
                                 }))
                             } else {
+                                // Early error return if column names are not correct.
                                 for column_number in 0..T::COLUMN_NAMES.len() {
-                                    let expected_column_name: &'static str = T::COLUMN_NAMES[column_number];
-                                    let actual_column_name = r.PQfname(column_number);
+                                    let expected_column_name: &'static str =
+                                        T::COLUMN_NAMES[column_number];
+                                    let actual_column_name: String = r.PQfname(column_number);
                                     if expected_column_name != actual_column_name {
                                         return Some(Err(QueryError::ColumnNameMismatchError {
                                             query: self.query.clone(),
@@ -53,8 +54,7 @@ where
                                             found: actual_column_name,
                                         }));
                                     }
-                                };
-
+                                }
                                 let rows: usize = r.PQntuples();
                                 if rows == 0 {
                                     None
@@ -134,7 +134,7 @@ impl TryFrom<Array<Option<&[u8]>, U0>> for EmptyResult {
 #[derive(Debug)]
 pub struct QueryReceiver<T> {
     pub(crate) query: String,
-    pub(crate) recv: Receiver<SendableQueryResult>,
+    pub(crate) recv: Receiver<RawQueryResult>,
     pub(crate) phantom: std::marker::PhantomData<T>,
     pub(crate) current_raw_query_result: Option<RawQueryResult>,
     pub(crate) current_row: usize,

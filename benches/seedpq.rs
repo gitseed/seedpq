@@ -22,11 +22,7 @@ struct User {
 
 impl QueryResult<'_> for User {
     type Columns = U3;
-    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array([
-        "id",
-        "name",
-        "hair_color"
-    ]);
+    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array(["id", "name", "hair_color"]);
 }
 
 impl TryFrom<Array<Option<&[u8]>, U3>> for User {
