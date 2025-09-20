@@ -10,12 +10,19 @@ pub enum QueryError {
     #[error("postgres connection thread unexpectedly hung up")]
     RecvError(#[from] mpsc::RecvError),
     #[error(
-        "insufficient columns returned by query, expected {expected} found {found}, query:\n{query}"
+        "insufficient columns in query result, expected {expected} found {found}, query:\n{query}"
     )]
     InsufficientColumnsError {
         query: String,
         expected: usize,
         found: usize,
+    },
+    #[error("column name mismatch in query result, for column {column_number} expected label {expected} found label {found}, query:\n{query}")]
+    ColumnNameMismatchError {
+        query: String,
+        column_number: usize,
+        expected: &'static str,
+        found: String,
     },
     #[error("connection error while executing query:\n{query}\n{msg}")]
     ConnectionError { query: String, msg: String },

@@ -37,7 +37,7 @@ impl RawQueryResult {
 
 pub type ExecStatusType = libpq::ExecStatusType;
 
-// Methods of RawQueryResult that are thing wrappers around methods on PQConn.
+// Methods of RawQueryResult that are thin wrappers around methods on PQConn.
 impl RawQueryResult {
     pub(crate) fn PQgetisnull(&self, row: usize, column: usize) -> bool {
         (unsafe { libpq::PQgetisnull(self.result, row as i32, column as i32) } == 1)
@@ -57,6 +57,13 @@ impl RawQueryResult {
 
     pub(crate) fn PQresultStatus(&self) -> ExecStatusType {
         unsafe { libpq::PQresultStatus(self.result) }
+    }
+
+    pub(crate) fn PQfname(&self, column_number: usize) -> String {
+        unsafe {
+            let raw_ptr: *mut i8 = libpq::PQfname(self.result, column_number as i32);
+            std::ffi::CStr::from_ptr(raw_ptr)
+        }.to_string_lossy().into_owned()
     }
 }
 

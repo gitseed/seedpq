@@ -13,6 +13,7 @@ pub trait QueryResult<'a>:
     TryFrom<Array<Option<&'a [u8]>, Self::Columns>, Error = QueryDataError>
 {
     type Columns: ArraySize;
+    const COLUMN_NAMES: Array<&'static str, Self::Columns>;
 }
 
 impl<T> Iterator for QueryReceiver<T>
@@ -41,6 +42,19 @@ where
                                     found: *columns,
                                 }))
                             } else {
+                                for column_number in 0..T::COLUMN_NAMES.len() {
+                                    let expected_column_name: &'static str = T::COLUMN_NAMES[column_number];
+                                    let actual_column_name = r.PQfname(column_number);
+                                    if expected_column_name != actual_column_name {
+                                        return Some(Err(QueryError::ColumnNameMismatchError {
+                                            query: self.query.clone(),
+                                            column_number,
+                                            expected: expected_column_name,
+                                            found: actual_column_name,
+                                        }));
+                                    }
+                                };
+
                                 let rows: usize = r.PQntuples();
                                 if rows == 0 {
                                     None
@@ -103,6 +117,7 @@ pub struct EmptyResult;
 
 impl QueryResult<'_> for EmptyResult {
     type Columns = U0;
+    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array([]);
 }
 
 impl TryFrom<Array<Option<&[u8]>, U0>> for EmptyResult {
