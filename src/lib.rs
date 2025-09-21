@@ -17,3 +17,6 @@ pub mod query_recv;
 pub mod query_recv_error;
 pub mod request;
 pub mod request_error;
+
+pub use connection::connect;
+pub use query::QueryResult;

@@ -6,7 +6,7 @@ use hybrid_array::typenum::U3;
 use seedpq;
 use seedpq::query::EmptyResult;
 use seedpq::query::QueryReceiver;
-use seedpq::query::QueryResult;
+use seedpq::QueryResult;
 use seedpq::query_error::QueryDataError;
 
 #[path = "common/common.rs"]
@@ -82,7 +82,7 @@ pub fn bench_trivial_seedpq(b: &mut Bencher) {
     b.iter_batched(
         || {
             common::setup_data();
-            let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+            let (s, r, _, _) = seedpq::connect("postgres:///example");
             s.exec("select version()", None).unwrap();
             r.get::<EmptyResult>().unwrap();
             (s, r)
