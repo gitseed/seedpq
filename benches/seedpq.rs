@@ -90,7 +90,7 @@ pub fn bench_trivial_seedpq(b: &mut Bencher) {
         |(s, r)| {
             s.exec("SELECT id, name, hair_color FROM users", None)
                 .unwrap();
-            let users: QueryReceiver<User> = r.get::<User>().unwrap();
+            let users: QueryReceiver<User> = r.get().unwrap();
             let result: Vec<User> = users.collect::<Result<Vec<User>, _>>().unwrap();
             assert_eq!(result.len(), 10000);
             result
