@@ -21,6 +21,13 @@ where
 {
     type Item = Result<T, QueryError>;
 
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self.current_raw_query_result {
+            None => (0, None),
+            Some(_) => (self.current_chunk_row_total - self.current_chunk_row, None),
+        }
+    }
+
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_raw_query_result.take() {
             // This means its time to retrieve a fresh chunk.

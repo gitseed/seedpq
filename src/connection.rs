@@ -1,5 +1,5 @@
 //! There is no "Connection" struct!
-//! Instead "connect" returns a ConnectionSender, a ResultReceiver, InfoReceiver, and a NoticeReceiver.
+//! Instead "connect" returns a ConnectionSender, a ResultReceiver, a InfoReceiver, and a NoticeReceiver.
 
 use std::sync::mpsc::{Receiver, Sender, channel};
 
@@ -81,7 +81,6 @@ fn connection_event_loop(
                         ));
                     } else {
                         _ = query_send.send((query, Ok(r)));
-
                         while let Some(exec_result) = conn.PQgetResult() {
                             _ = s.send(exec_result);
                         }

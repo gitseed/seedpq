@@ -23,7 +23,7 @@ impl RequestSender {
     /// Whether the execution is successful or not, the result will be sent to the QueryReceiver.
     /// If None is specified for chunk size, it will use a default chunk size.
     pub fn exec(&self, query: &str, chunk_size: Option<usize>) -> Result<(), RequestSenderError> {
-        const DEFAULT_CHUNK_SIZE: std::ffi::c_int = 255;
+        const DEFAULT_CHUNK_SIZE: std::ffi::c_int = 100;
 
         let chunk_size: std::ffi::c_int = match chunk_size {
             None => DEFAULT_CHUNK_SIZE,
