@@ -1,6 +1,7 @@
-use seedpq::libpq;
+use seedpq::EmptyResult;
 
-pub fn get_insert_query() -> std::ffi::CString {
+#[allow(dead_code)]
+pub fn get_insert_query() -> String {
     const TIMES: usize = 10000;
     let mut values: String = String::new();
     for n in 0..TIMES {
@@ -11,70 +12,18 @@ pub fn get_insert_query() -> std::ffi::CString {
     // Remove the trailing comma.
     values.pop();
 
-    std::ffi::CString::new(
-        format!("insert into users (name, hair_color) VALUES {}", values).as_str(),
-    )
-    .unwrap()
-}
-
-#[allow(dead_code)]
-unsafe extern "C" fn blackhole_notice_receiver(
-    _: *mut std::ffi::c_void,
-    _pg_result: *const libpq::pg_result,
-) {
-    {}
+    format!("insert into users (name, hair_color) VALUES {}", values)
 }
 
 #[allow(dead_code)]
 pub fn setup_data() {
-    unsafe {
-        let c: *mut libpq::pg_conn = libpq::PQconnectdb(c"postgres:///example".as_ptr());
-        // Avoids stdout spam while benchmarking...
-        libpq::PQsetNoticeReceiver(c, Some(blackhole_notice_receiver), std::ptr::null_mut());
-        let result: *mut libpq::pg_result = libpq::PQexecParams(
-            c,
-            c"TRUNCATE TABLE comments CASCADE".as_ptr(),
-            0,
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            1,
-        );
-        libpq::PQclear(result);
-        let result: *mut libpq::pg_result = libpq::PQexecParams(
-            c,
-            c"TRUNCATE TABLE posts CASCADE".as_ptr(),
-            0,
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            1,
-        );
-        libpq::PQclear(result);
-        let result: *mut libpq::pg_result = libpq::PQexecParams(
-            c,
-            c"TRUNCATE TABLE users CASCADE".as_ptr(),
-            0,
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            1,
-        );
-        libpq::PQclear(result);
-        let result: *mut libpq::pg_result = libpq::PQexecParams(
-            c,
-            get_insert_query().as_ptr(),
-            0,
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            std::ptr::null(),
-            1,
-        );
-        libpq::PQclear(result);
-        libpq::PQfinish(c);
-    }
+    let (s, r, _, _) = seedpq::connect("postgres:///example");
+    s.exec("TRUNCATE TABLE comments CASCADE", None).unwrap();
+    s.exec("TRUNCATE TABLE posts CASCADE", None).unwrap();
+    s.exec("TRUNCATE TABLE users CASCADE", None).unwrap();
+    s.exec(&get_insert_query(), None).unwrap();
+    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
+    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
+    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
+    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
 }

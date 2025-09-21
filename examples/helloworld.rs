@@ -1,9 +1,6 @@
 use hybrid_array::Array;
 use hybrid_array::typenum::U1;
 use seedpq;
-use seedpq::query::QueryReceiver;
-use seedpq::query::QueryResult;
-use seedpq::query_error::QueryDataError;
 
 fn main() {
     match _main() {
@@ -18,17 +15,17 @@ struct PostgresVersionInfo {
 }
 
 impl TryFrom<Array<Option<&[u8]>, U1>> for PostgresVersionInfo {
-    type Error = QueryDataError;
+    type Error = seedpq::error::QueryDataError;
 
     fn try_from(data: Array<Option<&[u8]>, U1>) -> Result<Self, Self::Error> {
         match data.0[0] {
-            None => Err(QueryDataError::UnexpectedNullError {
+            None => Err(seedpq::error::QueryDataError::UnexpectedNullError {
                 column: 0,
                 t: std::any::type_name::<PostgresVersionInfo>(),
             }),
             Some(data) => match str::from_utf8(data) {
                 Ok(s) => Ok(PostgresVersionInfo { info: s.to_owned() }),
-                Err(e) => Err(QueryDataError::Utf8Error {
+                Err(e) => Err(seedpq::error::QueryDataError::Utf8Error {
                     e,
                     column: 0,
                     t: std::any::type_name::<PostgresVersionInfo>(),
@@ -38,16 +35,16 @@ impl TryFrom<Array<Option<&[u8]>, U1>> for PostgresVersionInfo {
     }
 }
 
-impl QueryResult<'_> for PostgresVersionInfo {
+impl seedpq::QueryResult<'_> for PostgresVersionInfo {
     type Columns = U1;
     const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array(["version"]);
 }
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
-    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+    let (s, r, _, _) = seedpq::connect("postgres:///example");
 
     s.exec("SELECT version()", None)?;
-    let mut version: QueryReceiver<PostgresVersionInfo> = r.get::<PostgresVersionInfo>()?;
+    let mut version: seedpq::QueryReceiver<PostgresVersionInfo> = r.get::<PostgresVersionInfo>()?;
     println!("{}", version.next().unwrap().unwrap().info);
     Ok(())
 }

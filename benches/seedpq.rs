@@ -3,11 +3,8 @@ use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 use hybrid_array::Array;
 use hybrid_array::typenum::U3;
 
-use seedpq;
-use seedpq::QueryResult;
-use seedpq::query::EmptyResult;
-use seedpq::query::QueryReceiver;
-use seedpq::query_error::QueryDataError;
+use seedpq::error::QueryDataError;
+use seedpq::{EmptyResult, QueryReceiver, QueryResult};
 
 #[path = "common/common.rs"]
 mod common;

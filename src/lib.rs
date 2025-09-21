@@ -2,21 +2,30 @@
 // #![allow(warnings)]
 #![allow(dead_code)]
 
-/// The underlying libpq bit twiddling is kept away from library users.
+// Unsafe modules.
 mod connection_raw;
-pub mod libpq;
+mod libpq;
+mod query_raw;
 
-pub mod connection;
-pub mod connection_error;
-pub mod info;
-pub mod notice;
-pub mod query;
-pub mod query_error;
-pub mod query_raw;
-pub mod query_recv;
-pub mod query_recv_error;
-pub mod request;
-pub mod request_error;
+// Safe modules.
+mod connection;
+mod connection_error;
+mod info;
+mod notice;
+mod query;
+mod query_error;
+mod query_recv;
+mod query_recv_error;
+mod request;
+mod request_error;
 
+// Public library interfaces, make sure everything here is doc
 pub use connection::connect;
+pub use query::EmptyResult;
+pub use query::QueryReceiver;
 pub use query::QueryResult;
+
+pub mod error {
+    pub use super::query_error::QueryDataError;
+    pub use super::query_error::QueryError;
+}
