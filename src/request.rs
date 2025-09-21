@@ -12,16 +12,28 @@ pub struct RequestSender {
 
 /// The different types of requests that can be sent to postgres through a RequestSender.
 pub enum PostgresRequest {
-    Query(String),
+    Query {
+        query: String,
+        chunk_size: std::ffi::c_int,
+    },
 }
 
 impl RequestSender {
     /// Sends the query string to postgres to be executed.
     /// Whether the execution is successful or not, the result will be sent to the QueryReceiver.
-    /// Currently panics if the postgres thread hangs up, because I'm lazy.
-    /// todo: remove panic
-    pub fn exec(&self, query: &str) -> Result<(), RequestSenderError> {
-        match self.send.send(PostgresRequest::Query(query.to_owned())) {
+    /// If None is specified for chunk size, it will use a default chunk size.
+    pub fn exec(&self, query: &str, chunk_size: Option<usize>) -> Result<(), RequestSenderError> {
+        const DEFAULT_CHUNK_SIZE: std::ffi::c_int = 255;
+
+        let chunk_size: std::ffi::c_int = match chunk_size {
+            None => DEFAULT_CHUNK_SIZE,
+            Some(s) => s as std::ffi::c_int,
+        };
+
+        match self.send.send(PostgresRequest::Query {
+            query: query.to_owned(),
+            chunk_size,
+        }) {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }

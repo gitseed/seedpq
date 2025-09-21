@@ -59,13 +59,33 @@ fn connection_event_loop(
 
     while let Ok(request) = request_recv.recv() {
         match request {
-            PostgresRequest::Query(query) => {
+            PostgresRequest::Query { query, chunk_size } => {
                 let connection_status: ConnStatusType = conn.PQstatus();
                 if connection_status == ConnStatusType::CONNECTION_OK {
                     let (s, r) = channel::<RawQueryResult>();
-                    let exec_result: RawQueryResult = conn.exec(&query);
-                    _ = query_send.send((query, Ok(r)));
-                    _ = s.send(exec_result);
+                    if !conn.exec(&query) {
+                        _ = query_send.send((
+                            query,
+                            Err(ConnectionError::QueryUnsuccessfullyDispatched {
+                                status: connection_status,
+                                msg: conn.PQerrorMessage(),
+                            }),
+                        ));
+                    } else if !conn.PQsetChunkedRowsMode(chunk_size) {
+                        _ = query_send.send((
+                            query,
+                            Err(ConnectionError::FailedSettingChunkedRowsMode {
+                                status: connection_status,
+                                msg: conn.PQerrorMessage(),
+                            }),
+                        ));
+                    } else {
+                        _ = query_send.send((query, Ok(r)));
+
+                        while let Some(exec_result) = conn.PQgetResult() {
+                            _ = s.send(exec_result);
+                        }
+                    }
                 } else {
                     _ = query_send.send((
                         query,
