@@ -1,19 +1,12 @@
 use std::option::Option;
 use std::sync::mpsc::Receiver;
 
-use hybrid_array::typenum::U0;
+use hybrid_array::Array;
 use hybrid_array::typenum::Unsigned;
-use hybrid_array::{Array, ArraySize};
 
-use crate::error::{QueryDataError, QueryError};
-use crate::query_raw::{ExecStatusType, PQresStatus, RawQueryResult};
-
-pub trait QueryResult<'a>:
-    TryFrom<Array<Option<&'a [u8]>, Self::Columns>, Error = QueryDataError>
-{
-    type Columns: ArraySize;
-    const COLUMN_NAMES: Array<&'static str, Self::Columns>;
-}
+use crate::error::QueryError;
+use crate::query_result::QueryResult;
+use crate::raw::{ExecStatusType, PQresStatus, RawQueryResult};
 
 impl<T> Iterator for QueryReceiver<T>
 where
@@ -38,7 +31,7 @@ where
                     self.current_chunk_row = 0;
 
                     // Check the result status, and early return error error if its not good.
-                    let status: crate::libpq::ExecStatusType = r.PQresultStatus();
+                    let status: ExecStatusType = r.PQresultStatus();
                     if !matches!(
                         status,
                         ExecStatusType::PGRES_COMMAND_OK
@@ -127,21 +120,6 @@ where
                 }
             }
         }
-    }
-}
-
-pub struct EmptyResult;
-
-impl QueryResult<'_> for EmptyResult {
-    type Columns = U0;
-    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array([]);
-}
-
-impl TryFrom<Array<Option<&[u8]>, U0>> for EmptyResult {
-    type Error = QueryDataError;
-
-    fn try_from(_: Array<Option<&[u8]>, U0>) -> Result<Self, Self::Error> {
-        unreachable!()
     }
 }
 

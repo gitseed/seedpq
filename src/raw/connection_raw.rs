@@ -1,9 +1,9 @@
 // We allow non_snake_case because it more convenient to have the impls of RawConnection directly map to libpq functions.
 #![allow(non_snake_case)]
 
-use crate::libpq;
+use super::libpq;
 
-use crate::query_raw::RawQueryResult;
+use super::query_raw::RawQueryResult;
 
 use std::ptr::null;
 
@@ -47,8 +47,6 @@ impl RawConnection {
         result == 1
     }
 }
-
-pub type ConnStatusType = libpq::ConnStatusType;
 
 // Methods of RawConnection that are thin wrappers around methods on PQConn.
 impl RawConnection {

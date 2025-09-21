@@ -1,7 +1,7 @@
 // We allow non_snake_case because it more convenient to have the impls of RawQueryResult directly map to libpq functions.
 #![allow(non_snake_case)]
 
-use crate::libpq;
+use super::libpq;
 
 /// A private struct containing the raw C pointer to a PGresult.
 /// Dropping this will call
@@ -71,14 +71,5 @@ impl RawQueryResult {
         }
         .to_string_lossy()
         .into_owned()
-    }
-}
-
-/// Gets a static lifetime str from an ExecStatusType.
-/// While this can theoretically panic, in practice it won't unless your libpq library is corrupted or similar.
-pub(crate) fn PQresStatus(status: ExecStatusType) -> &'static str {
-    unsafe {
-        let raw: *mut std::ffi::c_char = libpq::PQresStatus(status);
-        std::ffi::CStr::from_ptr::<'static>(raw).to_str().unwrap()
     }
 }

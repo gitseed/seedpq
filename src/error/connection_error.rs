@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::connection_raw::ConnStatusType;
+use crate::raw::ConnStatusType;
 
 #[derive(Error, Debug)]
 pub enum ConnectionError {
