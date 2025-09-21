@@ -1,52 +1,53 @@
-use seedpq::connection::{Connection, connect};
-
-use futures::executor;
+use hybrid_array::Array;
+use hybrid_array::typenum::U1;
+use seedpq;
+use seedpq::query::QueryReceiver;
+use seedpq::query::QueryResult;
+use seedpq::query_error::QueryDataError;
 
 fn main() {
-    executor::block_on(async_main()).unwrap();
+    match _main() {
+        Ok(_) => (),
+        Err(e) => println!("{}", e),
+    }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
-struct User {
-    id: i32,
-    name: String,
-    hair_color: Option<String>,
+struct PostgresVersionInfo {
+    info: String,
 }
 
-impl From<[Option<&[u8]>; 3]> for User {
-    fn from(item: [Option<&[u8]>; 3]) -> Self {
-        User {
-            id: i32::from_be_bytes(item[0].unwrap().try_into().unwrap()),
-            name: String::from_utf8_lossy(item[1].unwrap()).into_owned(),
-            hair_color: match item[2] {
-                None => None,
-                Some(s) => Some(String::from_utf8_lossy(s).into_owned()),
+impl TryFrom<Array<Option<&[u8]>, U1>> for PostgresVersionInfo {
+    type Error = QueryDataError;
+
+    fn try_from(data: Array<Option<&[u8]>, U1>) -> Result<Self, Self::Error> {
+        match data.0[0] {
+            None => Err(QueryDataError::UnexpectedNullError {
+                column: 0,
+                t: std::any::type_name::<PostgresVersionInfo>(),
+            }),
+            Some(data) => match str::from_utf8(data) {
+                Ok(s) => Ok(PostgresVersionInfo { info: s.to_owned() }),
+                Err(e) => Err(QueryDataError::Utf8Error {
+                    e,
+                    column: 0,
+                    t: std::any::type_name::<PostgresVersionInfo>(),
+                }),
             },
         }
     }
 }
 
-const TIMES: usize = 10;
+impl QueryResult<'_> for PostgresVersionInfo {
+    type Columns = U1;
+    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array(["version"]);
+}
 
-async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut c: Connection = connect("postgres:///example").await;
-    c.exec("TRUNCATE TABLE comments CASCADE")?.await?;
-    c.exec("TRUNCATE TABLE posts CASCADE")?.await?;
-    c.exec("TRUNCATE TABLE users CASCADE")?.await?;
-    for n in 0..TIMES {
-        c.exec(
-            format!(
-                "insert into users (name, hair_color) VALUES ('User {}', NULL)",
-                n.to_string()
-            )
-            .as_str(),
-        )?
-        .await?;
-    }
-    let result: seedpq::query_result::QueryResult =
-        c.exec("SELECT id, name, hair_color FROM users;")?.await?;
-    let user: User = result.fetch_one::<3, User>();
-    println!("{:?}", user);
+fn _main() -> Result<(), Box<dyn std::error::Error>> {
+    let (s, r, _, _) = seedpq::connection::connect("postgres:///example");
+
+    s.exec("SELECT version()", None)?;
+    let mut version: QueryReceiver<PostgresVersionInfo> = r.get::<PostgresVersionInfo>()?;
+    println!("{}", version.next().unwrap().unwrap().info);
     Ok(())
 }
