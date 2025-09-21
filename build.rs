@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    let libpq = pkg_config::Config::new().probe("libpq").unwrap();
+    let libpq = pkg_config::Config::new().atleast_version("17.0.0").probe("libpq").unwrap();
     println!("cargo::rerun-if-changed=build.rs");
 
     let bindings = bindgen::Builder::default()
