@@ -4,9 +4,9 @@ use hybrid_array::Array;
 use hybrid_array::typenum::U3;
 
 use seedpq;
+use seedpq::QueryResult;
 use seedpq::query::EmptyResult;
 use seedpq::query::QueryReceiver;
-use seedpq::QueryResult;
 use seedpq::query_error::QueryDataError;
 
 #[path = "common/common.rs"]
