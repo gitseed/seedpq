@@ -1,6 +1,7 @@
 use hybrid_array::Array;
 use hybrid_array::typenum::U1;
 use seedpq;
+use seedpq::HelloMacro;
 
 fn main() {
     match _main() {
@@ -9,7 +10,11 @@ fn main() {
     }
 }
 
-#[derive(Debug)]
+pub trait HelloMacro {
+    fn hello_macro();
+}
+
+#[derive(Debug, HelloMacro)]
 struct PostgresVersionInfo {
     info: String,
 }
@@ -40,7 +45,11 @@ impl seedpq::QueryResult<'_> for PostgresVersionInfo {
     const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array(["version"]);
 }
 
+
+
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
+    PostgresVersionInfo::hello_macro();
+
     let (s, r, _, _) = seedpq::connect("postgres:///example");
 
     s.exec("SELECT version()", None)?;

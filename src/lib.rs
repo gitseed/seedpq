@@ -29,3 +29,6 @@ pub use query_result::QueryResult;
 
 // Re export hybrid_array, so that it can be used in derive macros.
 pub use hybrid_array;
+
+// Re export derive macro...
+pub use derive::HelloMacro;
