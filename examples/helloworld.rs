@@ -45,8 +45,6 @@ impl seedpq::QueryResult<'_> for PostgresVersionInfo {
     const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array(["version"]);
 }
 
-
-
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     PostgresVersionInfo::hello_macro();
 
