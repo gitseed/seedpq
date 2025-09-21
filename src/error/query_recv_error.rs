@@ -2,7 +2,7 @@ use std::sync::mpsc;
 
 use thiserror::Error;
 
-use crate::connection_error::ConnectionError;
+use crate::error::connection_error::ConnectionError;
 
 #[derive(Error, Debug)]
 pub enum QueriesReceiverError {

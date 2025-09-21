@@ -15,17 +15,17 @@ struct PostgresVersionInfo {
 }
 
 impl TryFrom<Array<Option<&[u8]>, U1>> for PostgresVersionInfo {
-    type Error = seedpq::error::QueryDataError;
+    type Error = seedpq::QueryDataError;
 
     fn try_from(data: Array<Option<&[u8]>, U1>) -> Result<Self, Self::Error> {
         match data.0[0] {
-            None => Err(seedpq::error::QueryDataError::UnexpectedNullError {
+            None => Err(seedpq::QueryDataError::UnexpectedNullError {
                 column: 0,
                 t: std::any::type_name::<PostgresVersionInfo>(),
             }),
             Some(data) => match str::from_utf8(data) {
                 Ok(s) => Ok(PostgresVersionInfo { info: s.to_owned() }),
-                Err(e) => Err(seedpq::error::QueryDataError::Utf8Error {
+                Err(e) => Err(seedpq::QueryDataError::Utf8Error {
                     e,
                     column: 0,
                     t: std::any::type_name::<PostgresVersionInfo>(),

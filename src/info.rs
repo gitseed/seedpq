@@ -9,6 +9,7 @@ pub enum Info {}
 /// Receives the results of requests for info sent to the connection.
 /// For example for checking the transaction status.
 /// The methods of this struct will block.
+#[allow(dead_code)]
 pub struct InfoReceiver {
     pub(crate) recv: Receiver<Info>,
 }

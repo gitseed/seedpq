@@ -5,7 +5,7 @@ use hybrid_array::typenum::U0;
 use hybrid_array::typenum::Unsigned;
 use hybrid_array::{Array, ArraySize};
 
-use crate::query_error::{QueryDataError, QueryError};
+use crate::error::{QueryDataError, QueryError};
 use crate::query_raw::{ExecStatusType, PQresStatus, RawQueryResult};
 
 pub trait QueryResult<'a>:

@@ -1,9 +1,9 @@
 use std::sync::mpsc::Receiver;
 
-use crate::connection_error::ConnectionError;
+use crate::error::connection_error::ConnectionError;
+use crate::error::query_recv_error::QueriesReceiverError;
 use crate::query::QueryReceiver;
 use crate::query_raw::RawQueryResult;
-use crate::query_recv_error::QueriesReceiverError;
 
 /// The receiving end of a database connection, that receives queries.
 pub struct QueriesReceiver {

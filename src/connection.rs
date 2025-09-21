@@ -3,13 +3,13 @@
 
 use std::sync::mpsc::{Receiver, Sender, channel};
 
-use crate::connection_error::ConnectionError;
 use crate::connection_raw::{ConnStatusType, RawConnection, custom_notice_receiver};
+use crate::error::connection_error::ConnectionError;
 use crate::info;
 use crate::info::InfoReceiver;
 use crate::notice::NoticeReceiver;
+use crate::queries_recv::QueriesReceiver;
 use crate::query_raw::RawQueryResult;
-use crate::query_recv::QueriesReceiver;
 use crate::request::{PostgresRequest, RequestSender};
 
 /// Opens a postgres connecting using a connection string.

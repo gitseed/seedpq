@@ -1,6 +1,4 @@
 //! Library entry point for seedpq. Just pub mod statements for now.
-// #![allow(warnings)]
-#![allow(dead_code)]
 
 // Unsafe modules.
 mod connection_raw;
@@ -9,23 +7,25 @@ mod query_raw;
 
 // Safe modules.
 mod connection;
-mod connection_error;
+mod error;
 mod info;
 mod notice;
+mod queries_recv;
 mod query;
-mod query_error;
-mod query_recv;
-mod query_recv_error;
 mod request;
 mod request_error;
 
-// Public library interfaces, make sure everything here is doc
+// Public library interfaces, make sure everything here is documented.
+pub use error::ConnectionError;
+pub use error::QueriesReceiverError;
+pub use error::QueryDataError;
+pub use error::QueryError;
+
 pub use connection::connect;
+
 pub use query::EmptyResult;
 pub use query::QueryReceiver;
 pub use query::QueryResult;
 
-pub mod error {
-    pub use super::query_error::QueryDataError;
-    pub use super::query_error::QueryError;
-}
+// Re export hybrid_array, so that it can be used in derive macros.
+pub use hybrid_array;
