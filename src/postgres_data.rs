@@ -3,7 +3,7 @@ use crate::error::UnexpectedNullError;
 
 use std::error::Error;
 
-pub struct PostgresData<'a>(Option<&'a [u8]>);
+pub struct PostgresData<'a>(pub Option<&'a [u8]>);
 
 impl TryInto<String> for PostgresData<'_> {
     type Error = Box<dyn Error>;

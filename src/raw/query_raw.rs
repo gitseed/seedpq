@@ -3,6 +3,8 @@
 
 use super::libpq;
 
+use crate::postgres_data::PostgresData;
+
 /// A private struct containing the raw C pointer to a PGresult.
 /// Dropping this will call
 #[derive(Debug)]
@@ -25,16 +27,16 @@ impl RawQueryResult {
         RawQueryResult(raw_ptr)
     }
 
-    pub(crate) fn fetch_cell(&self, row: usize, column: usize) -> Option<&[u8]> {
+    pub(crate) fn fetch_cell(&self, row: usize, column: usize) -> PostgresData<'_> {
         unsafe {
             // Pointer postgres gives is signed bytes, but rust wants raw data to be unsigned bytes. It's the same bytes though.
             let data: *mut u8 = libpq::PQgetvalue(self.0, row as i32, column as i32) as *mut u8;
             match self.PQgetisnull(row, column) {
-                true => None,
-                false => Some(std::slice::from_raw_parts(
+                true => PostgresData(None),
+                false => PostgresData(Some(std::slice::from_raw_parts(
                     data,
                     self.PQgetlength(row, column),
-                )),
+                ))),
             }
         }
     }

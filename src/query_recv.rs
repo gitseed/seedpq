@@ -5,6 +5,7 @@ use hybrid_array::Array;
 use hybrid_array::typenum::Unsigned;
 
 use crate::error::QueryError;
+use crate::postgres_data::PostgresData;
 use crate::query_result::QueryResult;
 use crate::raw::{ExecStatusType, PQresStatus, RawQueryResult};
 
@@ -81,7 +82,7 @@ where
                         self.current_raw_query_result = Some(r);
                         None
                     } else {
-                        let data: Array<Option<&[u8]>, T::Columns> =
+                        let data: Array<PostgresData, T::Columns> =
                             Array::from_fn(|column| r.fetch_cell(self.current_chunk_row, column));
                         self.current_chunk_row += 1;
                         let result = match T::try_from(data) {
@@ -103,7 +104,7 @@ where
                     self.current_raw_query_result = Some(r);
                     None
                 } else {
-                    let data: Array<Option<&[u8]>, T::Columns> =
+                    let data: Array<PostgresData, T::Columns> =
                         Array::from_fn(|column| r.fetch_cell(self.current_chunk_row, column));
                     self.current_chunk_row += 1;
                     let result = match T::try_from(data) {
