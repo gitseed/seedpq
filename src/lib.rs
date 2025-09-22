@@ -9,6 +9,7 @@ mod empty_result;
 mod error;
 mod info;
 mod notice;
+mod postgres_data;
 mod queries_recv;
 mod query_recv;
 mod query_result;
@@ -24,6 +25,7 @@ pub use error::QueryError;
 pub use connection::connect;
 
 pub use empty_result::EmptyResult;
+pub use postgres_data::PostgresData;
 pub use query_recv::QueryReceiver;
 pub use query_result::QueryResult;
 
