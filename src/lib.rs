@@ -19,8 +19,8 @@ mod request_error;
 // Public library interfaces, make sure everything here is documented.
 pub use error::ConnectionError;
 pub use error::QueriesReceiverError;
-pub use error::QueryDataError;
 pub use error::QueryError;
+pub use error::QueryResultError;
 
 pub use connection::connect;
 

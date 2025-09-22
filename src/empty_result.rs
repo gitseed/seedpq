@@ -1,4 +1,4 @@
-use crate::error::QueryDataError;
+use crate::error::QueryResultError;
 use crate::postgres_data::PostgresData;
 use crate::query_result::QueryResult;
 
@@ -13,7 +13,7 @@ impl QueryResult<'_> for EmptyResult {
 }
 
 impl TryFrom<Array<PostgresData<'_>, U0>> for EmptyResult {
-    type Error = QueryDataError;
+    type Error = QueryResultError;
 
     fn try_from(_: Array<PostgresData, U0>) -> Result<Self, Self::Error> {
         unreachable!()

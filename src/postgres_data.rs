@@ -3,6 +3,7 @@ use crate::error::UnexpectedNullError;
 
 use std::error::Error;
 
+#[derive(Copy, Clone, Debug)]
 pub struct PostgresData<'a>(pub Option<&'a [u8]>);
 
 impl TryInto<String> for PostgresData<'_> {
@@ -35,10 +36,10 @@ impl TryInto<bool> for PostgresData<'_> {
             None => Err(Box::new(UnexpectedNullError)),
             Some(s) => match <[u8; 1]>::try_from(s) {
                 Err(e) => Err(Box::new(e)),
-                Ok(arr) => match arr[0] {
+                Ok([n]) => match n {
                     0 => Ok(false),
                     1 => Ok(true),
-                    _ => Err(Box::new(BadBooleanError { actual: arr[0] })),
+                    _ => Err(Box::new(BadBooleanError { actual: n })),
                 },
             },
         }

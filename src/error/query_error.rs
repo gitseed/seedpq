@@ -2,7 +2,7 @@ use std::sync::mpsc;
 
 use thiserror::Error;
 
-use super::query_data_error::QueryDataError;
+use super::query_result_error::QueryResultError;
 
 /// An error obtained while getting a QueryResult from a QueryReceiver.
 /// This almost always knows of the text of the query that was run as well as the row.
@@ -33,7 +33,7 @@ pub enum QueryError {
     #[error("error converting query results into a rust type, query:\n{query}")]
     QueryDataError {
         #[source]
-        e: QueryDataError,
+        e: QueryResultError,
         query: String,
     },
     #[error("PGresult had bad status {status}, for query:\n{query}")]
