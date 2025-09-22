@@ -50,9 +50,8 @@ fn bench_trivial_sfackler_postgres_query_raw(b: &mut Bencher) {
             client
         },
         |mut client| {
-            let empty: &[i8] = &[];
             let mut rows: postgres::RowIter<'_> = client
-                .query_raw("SELECT id, name, hair_color FROM users", empty)
+                .query_raw("SELECT id, name, hair_color FROM users", &[] as &[i8])
                 .unwrap();
 
             let mut result: Vec<User> = Vec::new();
