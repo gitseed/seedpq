@@ -31,4 +31,4 @@ pub use query_result::QueryResult;
 pub use hybrid_array;
 
 // Re export derive macro...
-pub use derive::HelloMacro;
+pub use derive::QueryResult;
