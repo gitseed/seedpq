@@ -1,4 +1,5 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
+use postgres::fallible_iterator::FallibleIterator;
 use postgres::{Client, NoTls};
 
 #[path = "common/common.rs"]
@@ -40,11 +41,43 @@ fn bench_trivial_sfackler_postgres(b: &mut Bencher) {
     );
 }
 
+fn bench_trivial_sfackler_postgres_query_raw(b: &mut Bencher) {
+    b.iter_batched(
+        || {
+            common::setup_data();
+            let mut client = Client::connect("host=/tmp/ dbname=example", NoTls).unwrap();
+            client.execute("select version()", &[]).unwrap();
+            client
+        },
+        |mut client| {
+            let empty: &[i8] = &[];
+            let mut rows: postgres::RowIter<'_> = client
+                .query_raw("SELECT id, name, hair_color FROM users", empty)
+                .unwrap();
+
+            let mut result: Vec<User> = Vec::new();
+            while let Some(row) = rows.next().unwrap() {
+                result.push(User {
+                    id: row.get(0),
+                    name: row.get(1),
+                    hair_color: row.get(2),
+                });
+            }
+            result
+        },
+        criterion::BatchSize::PerIteration,
+    );
+}
+
 fn bench_trivial_query(c: &mut Criterion) {
     #[allow(warnings)]
     let mut group = c.benchmark_group("bench_trivial_query");
 
     group.bench_function("sfackler_postgres", bench_trivial_sfackler_postgres);
+    group.bench_function(
+        "sfackler_postgres_query_raw",
+        bench_trivial_sfackler_postgres_query_raw,
+    );
 }
 
 criterion_group!(benches, bench_trivial_query);
