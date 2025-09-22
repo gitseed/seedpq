@@ -1,60 +1,16 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 
-use hybrid_array::Array;
-use hybrid_array::typenum::U3;
-
-use seedpq::{EmptyResult, PostgresData, QueryReceiver, QueryResult, QueryResultError};
+use seedpq::{EmptyResult, QueryReceiver, QueryResult};
 
 #[path = "common/common.rs"]
 mod common;
 
-#[derive(Debug)]
+#[derive(Debug, QueryResult)]
 #[allow(dead_code)]
 struct User {
     id: i32,
     name: String,
     hair_color: Option<String>,
-}
-
-impl QueryResult<'_> for User {
-    type Columns = U3;
-    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array(["id", "name", "hair_color"]);
-}
-
-impl TryFrom<Array<PostgresData<'_>, U3>> for User {
-    type Error = QueryResultError;
-
-    fn try_from(data: Array<PostgresData, U3>) -> Result<Self, Self::Error> {
-        let id: i32 = match data.0[0].try_into() {
-            Ok(value) => Ok(value),
-            Err(e) => Err(QueryResultError {
-                e,
-                t: std::any::type_name::<User>(),
-                column: 0,
-            }),
-        }?;
-        let name: String = match data.0[1].try_into() {
-            Ok(value) => Ok(value),
-            Err(e) => Err(QueryResultError {
-                e,
-                t: std::any::type_name::<User>(),
-                column: 1,
-            }),
-        }?;
-        let hair_color: Option<String> = match data.0[2].try_into() {
-            Ok(value) => Ok(value),
-            Err(e) => Err(QueryResultError {
-                e,
-                t: std::any::type_name::<User>(),
-                column: 2,
-            }),
-        }?;
-        Ok(User {
-            id,
-            name,
-            hair_color,
-        })
-    }
 }
 
 pub fn bench_trivial_seedpq(b: &mut Bencher) {
