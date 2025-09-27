@@ -11,6 +11,7 @@ mod error;
 mod info;
 mod notice;
 mod postgres_data;
+mod postgres_row;
 mod queries_recv;
 mod query_recv;
 mod query_result;
