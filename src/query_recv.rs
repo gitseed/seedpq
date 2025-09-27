@@ -58,18 +58,24 @@ where
                         }));
                     }
 
+                    // If COLUMN_NAMES is not none then:
                     // Check the field names returned, and early return error if they're not correct.
-                    for column_number in 0..T::COLUMN_NAMES.len() {
-                        let expected_column_name: &'static str = T::COLUMN_NAMES[column_number];
-                        let actual_column_name: String = r.PQfname(column_number);
-                        if expected_column_name != actual_column_name {
-                            self.current_raw_query_result = Some(r);
-                            return Some(Err(QueryError::ColumnNameMismatchError {
-                                query: self.query.clone(),
-                                column_number,
-                                expected: expected_column_name,
-                                found: actual_column_name,
-                            }));
+                    match T::COLUMN_NAMES {
+                        None => (),
+                        Some(s) => {
+                            for column_number in 0..s.len() {
+                                let expected_column_name: &'static str = s[column_number];
+                                let actual_column_name: String = r.PQfname(column_number);
+                                if expected_column_name != actual_column_name {
+                                    self.current_raw_query_result = Some(r);
+                                    return Some(Err(QueryError::ColumnNameMismatchError {
+                                        query: self.query.clone(),
+                                        column_number,
+                                        expected: expected_column_name,
+                                        found: actual_column_name,
+                                    }));
+                                }
+                            }
                         }
                     }
 

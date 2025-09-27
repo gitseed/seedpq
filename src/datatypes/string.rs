@@ -1,5 +1,6 @@
+use crate::PostgresData;
+use crate::QueryResult;
 use crate::error::UnexpectedNullError;
-use crate::postgres_data::PostgresData;
 
 use std::error::Error;
 
@@ -24,3 +25,7 @@ impl TryInto<Option<String>> for PostgresData<'_> {
         }
     }
 }
+
+// impl QueryResult for Option<String> {
+
+// }

@@ -9,7 +9,7 @@ pub struct EmptyResult;
 
 impl QueryResult<'_> for EmptyResult {
     type Columns = U0;
-    const COLUMN_NAMES: Array<&'static str, Self::Columns> = Array([]);
+    const COLUMN_NAMES: Option<Array<&'static str, Self::Columns>> = Some(Array([]));
 }
 
 impl TryFrom<Array<PostgresData<'_>, U0>> for EmptyResult {

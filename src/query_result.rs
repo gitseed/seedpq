@@ -7,5 +7,5 @@ pub trait QueryResult<'a>:
     TryFrom<Array<PostgresData<'a>, Self::Columns>, Error = QueryResultError>
 {
     type Columns: ArraySize;
-    const COLUMN_NAMES: Array<&'static str, Self::Columns>;
+    const COLUMN_NAMES: Option<Array<&'static str, Self::Columns>>;
 }
