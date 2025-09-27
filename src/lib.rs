@@ -5,6 +5,7 @@ mod raw;
 
 // Safe modules.
 mod connection;
+mod datatypes;
 mod empty_result;
 mod error;
 mod info;
