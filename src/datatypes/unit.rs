@@ -15,6 +15,7 @@ impl QueryResult<'_> for () {
 impl TryFrom<PostgresRow<'_, U0>> for () {
     type Error = QueryResultError;
 
+    /// Always fails, because empty query results should have zero rows.
     fn try_from(_: PostgresRow<'_, U0>) -> Result<Self, Self::Error> {
         Err(QueryResultError {
             e: Box::new(NotEmpty),

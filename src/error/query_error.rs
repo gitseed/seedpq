@@ -43,6 +43,7 @@ pub enum QueryError {
         query: String,
         error_msg: String,
     },
+    /// Note, this isn't any sort of error from postgres, but rather a logic error in library usage.
     #[error("tried to fetch one row, but out of rows, for query:\n{query}")]
     OutOfRowsError { query: String },
 }
