@@ -36,8 +36,13 @@ pub enum QueryError {
         e: QueryResultError,
         query: String,
     },
-    #[error("PGresult had bad status {status}, for query:\n{query}")]
-    ResultStatusError { status: &'static str, query: String },
+    // Note, we don't need a newline after error_msg because it already has one included.
+    #[error("PGresult had bad status {status} with error:\n{error_msg}for query:\n{query}")]
+    ResultStatusError {
+        status: &'static str,
+        query: String,
+        error_msg: String,
+    },
     #[error("tried to fetch one row, but out of rows, for query:\n{query}")]
     OutOfRowsError { query: String },
 }

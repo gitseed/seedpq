@@ -42,11 +42,14 @@ where
                             | ExecStatusType::PGRES_SINGLE_TUPLE
                             | ExecStatusType::PGRES_TUPLES_CHUNK
                     ) {
+                        let result: Option<Result<T, QueryError>> =
+                            Some(Err(QueryError::ResultStatusError {
+                                status: PQresStatus(status),
+                                error_msg: r.PQresultErrorMessage(),
+                                query: self.query.clone(),
+                            }));
                         self.current_raw_query_result = Some(r);
-                        return Some(Err(QueryError::ResultStatusError {
-                            status: PQresStatus(status),
-                            query: self.query.clone(),
-                        }));
+                        return result;
                     }
 
                     // Check the column count, and early return error if it's lower than the expected number of columns.

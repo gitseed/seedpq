@@ -66,6 +66,12 @@ impl RawQueryResult {
         unsafe { libpq::PQresultStatus(self.0) }
     }
 
+    pub(crate) fn PQresultErrorMessage(&self) -> String {
+        unsafe { std::ffi::CStr::from_ptr(libpq::PQresultErrorMessage(self.0)) }
+            .to_string_lossy()
+            .into_owned()
+    }
+
     pub(crate) fn PQfname(&self, column_number: usize) -> String {
         unsafe {
             let raw_ptr: *mut i8 = libpq::PQfname(self.0, column_number as i32);

@@ -5,12 +5,12 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     db_send.exec("insert into timestamp(infinity)")?;
     db_send.exec("insert into timestamp(-infinity)")?;
     db_send.exec("insert into timestamp(now)")?;
-    db_send.exec("select * from timestamp")?;
+    // db_send.exec("select * from timestamp")?;
     db_recv.get()?.none()?;
-    // r.pass()?;
-    // r.pass()?;
-    // r.pass()?;
-    // r.pass()?;
+    db_recv.get()?.none()?;
+    db_recv.get()?.none()?;
+    db_recv.get()?.none()?;
+    db_recv.get()?.none()?;
     Ok(())
 }
 
