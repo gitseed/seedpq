@@ -15,7 +15,7 @@ fn main() {
     let users: Vec<User> = users.collect::<Result<Vec<User>, _>>().unwrap();
     dbg!(users);
     s.exec("select version()", None).unwrap();
-    let version: QueryReceiver<String> = r.get().unwrap();
-    let version: Vec<String> = version.collect::<Result<Vec<String>, _>>().unwrap();
+    let mut version: QueryReceiver<String> = r.get().unwrap();
+    let version: String = version.next().unwrap().unwrap();
     dbg!(version);
 }
