@@ -6,15 +6,14 @@ use std::error::Error;
 
 macro_rules! numeric_impl {
     ($num_type:ty) => {
-        impl TryInto<$num_type> for PostgresData<'_> {
+        impl TryFrom<PostgresData<'_>> for $num_type {
             type Error = Box<dyn Error>;
-
-            fn try_into(self) -> Result<$num_type, Box<dyn Error>> {
-                match self.0 {
+            fn try_from(value: PostgresData<'_>) -> Result<Self, Self::Error> {
+                match value.0 {
                     None => Err(Box::new(UnexpectedNullError)),
-                    Some(s) => match <[u8; size_of::<$num_type>()]>::try_from(s) {
+                    Some(s) => match <[u8; size_of::<Self>()]>::try_from(s) {
                         Err(e) => Err(Box::new(e)),
-                        Ok(arr) => Ok(<$num_type>::from_be_bytes(arr)),
+                        Ok(arr) => Ok(Self::from_be_bytes(arr)),
                     },
                 }
             }
@@ -24,11 +23,10 @@ macro_rules! numeric_impl {
 
 macro_rules! nullable_numeric_impl {
     ($num_type:ty) => {
-        impl TryInto<Option<$num_type>> for PostgresData<'_> {
+        impl TryFrom<PostgresData<'_>> for Option<$num_type> {
             type Error = Box<dyn Error>;
-
-            fn try_into(self) -> Result<Option<$num_type>, Box<dyn Error>> {
-                match self.0 {
+            fn try_from(value: PostgresData<'_>) -> Result<Self, Self::Error> {
+                match value.0 {
                     None => Ok(None),
                     Some(s) => match <[u8; size_of::<$num_type>()]>::try_from(s) {
                         Err(e) => Err(Box::new(e)),

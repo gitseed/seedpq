@@ -5,11 +5,10 @@ use crate::postgres_data::PostgresData;
 
 use std::error::Error;
 
-impl TryInto<bool> for PostgresData<'_> {
+impl TryFrom<PostgresData<'_>> for bool {
     type Error = Box<dyn Error>;
-
-    fn try_into(self) -> Result<bool, Box<dyn Error>> {
-        match self.0 {
+    fn try_from(value: PostgresData) -> Result<Self, Self::Error> {
+        match value.0 {
             None => Err(Box::new(UnexpectedNullError)),
             Some(s) => match <[u8; 1]>::try_from(s) {
                 Err(e) => Err(Box::new(e)),
@@ -24,11 +23,10 @@ impl TryInto<bool> for PostgresData<'_> {
 }
 single_value_result!(bool);
 
-impl TryInto<Option<bool>> for PostgresData<'_> {
+impl TryFrom<PostgresData<'_>> for Option<bool> {
     type Error = Box<dyn Error>;
-
-    fn try_into(self) -> Result<Option<bool>, Box<dyn Error>> {
-        match self.0 {
+    fn try_from(value: PostgresData) -> Result<Self, Self::Error> {
+        match value.0 {
             None => Ok(None),
             Some(s) => match <[u8; 1]>::try_from(s) {
                 Err(e) => Err(Box::new(e)),
