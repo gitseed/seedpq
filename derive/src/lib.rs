@@ -54,10 +54,10 @@ fn impl_query_result_macro(ast: &syn::DeriveInput) -> TokenStream {
             const COLUMN_NAMES: ::std::option::Option<::seedpq::hybrid_array::Array<&'static str, Self::Columns>> = ::core::option::Option::Some(::seedpq::hybrid_array::Array([#(#struct_names_quoted),*]));
         }
 
-        impl ::std::convert::TryFrom<::seedpq::hybrid_array::Array<::seedpq::PostgresData<'_>, ::seedpq::hybrid_array::typenum::#column_count>> for #name {
+        impl ::std::convert::TryFrom<::seedpq::PostgresRow<'_, ::seedpq::hybrid_array::typenum::#column_count>> for #name {
             type Error = ::seedpq::QueryResultError;
 
-            fn try_from(data: ::seedpq::hybrid_array::Array<::seedpq::PostgresData, ::seedpq::hybrid_array::typenum::#column_count>) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(data: ::seedpq::PostgresRow<'_, ::seedpq::hybrid_array::typenum::#column_count>) -> ::std::result::Result<Self, Self::Error> {
                 #(#try_from_blocks)*;
 
                 ::std::result::Result::Ok(#name { #(#struct_names_unquoted),* })

@@ -28,6 +28,7 @@ pub use connection::connect;
 
 pub use empty_result::EmptyResult;
 pub use postgres_data::PostgresData;
+pub use postgres_row::PostgresRow;
 pub use query_recv::QueryReceiver;
 pub use query_result::QueryResult;
 
