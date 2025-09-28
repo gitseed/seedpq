@@ -38,4 +38,6 @@ pub enum QueryError {
     },
     #[error("PGresult had bad status {status}, for query:\n{query}")]
     ResultStatusError { status: &'static str, query: String },
+    #[error("you tried to fetch a row with one, but there were no more rows to fetch")]
+    OutOfRowsError,
 }

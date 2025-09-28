@@ -5,9 +5,11 @@ use hybrid_array::Array;
 use hybrid_array::typenum::Unsigned;
 
 use crate::PostgresRow;
-use crate::error::QueryError;
+
 use crate::query_result::QueryResult;
 use crate::raw::{ExecStatusType, PQresStatus, RawQueryResult};
+
+use crate::error::QueryError;
 
 impl<T> Iterator for QueryReceiver<T>
 where
@@ -143,4 +145,20 @@ pub struct QueryReceiver<T> {
     pub(crate) current_raw_query_result: Option<RawQueryResult>,
     pub(crate) current_chunk_row: usize,
     pub(crate) current_chunk_row_total: usize,
+}
+
+impl <T>QueryReceiver<T> where for<'a> T: QueryResult<'a> {
+    pub fn one(mut self) -> Result<T, QueryError> {
+        match self.next() {
+            None => Err(QueryError::OutOfRowsError),
+            Some(s) => s,
+        }
+    }
+    // pub fn all(self) -> Result<Vec<T>, QueryError> {
+    //     self.collect::<Result<Vec<T>, QueryError>>()
+    // }
+
+    pub fn all<B: FromIterator<T>>(self) -> Result<B, QueryError> {
+        self.collect::<Result<B, QueryError>>()
+    }
 }
