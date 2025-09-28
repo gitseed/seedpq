@@ -1,4 +1,4 @@
-use seedpq::{QueryReceiver, QueryResult};
+use seedpq::QueryResult;
 
 #[derive(QueryResult, Debug)]
 #[allow(dead_code)]
@@ -11,12 +11,10 @@ struct User {
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let (s, r, _, _) = seedpq::connect("postgres:///example");
     s.exec("select * from users limit 5", None)?;
-    let users: QueryReceiver<User> = r.get()?;
-    let users: Vec<User> = users.all()?;
+    let users: Vec<User> = r.get()?.all()?;
     dbg!(users);
-    s.exec("select version()", None).unwrap();
-    let version: QueryReceiver<String> = r.get().unwrap();
-    let version: String = version.one().unwrap();
+    s.exec("select version()", None)?;
+    let version: String = r.get()?.one()?;
     dbg!(version);
     Ok(())
 }
