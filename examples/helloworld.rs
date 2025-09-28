@@ -10,10 +10,10 @@ struct User {
 
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let (s, r, _, _) = seedpq::connect("postgres:///example");
-    s.exec("select * from users limit 5", None)?;
+    s.exec("select * from users limit 5")?;
     let users: Vec<User> = r.get()?.all()?;
     dbg!(users);
-    s.exec("select version()", None)?;
+    s.exec("select version()")?;
     let version: String = r.get()?.one()?;
     dbg!(version);
     Ok(())

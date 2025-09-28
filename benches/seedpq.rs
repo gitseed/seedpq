@@ -18,13 +18,12 @@ pub fn bench_trivial_seedpq(b: &mut Bencher) {
         || {
             common::setup_data();
             let (s, r, _, _) = seedpq::connect("postgres:///example");
-            s.exec("select version()", None).unwrap();
+            s.exec("select version()").unwrap();
             r.get::<EmptyResult>().unwrap();
             (s, r)
         },
         |(s, r)| {
-            s.exec("SELECT id, name, hair_color FROM users", None)
-                .unwrap();
+            s.exec("SELECT id, name, hair_color FROM users").unwrap();
             let users: QueryReceiver<User> = r.get().unwrap();
             let result: Vec<User> = users.collect::<Result<Vec<User>, _>>().unwrap();
             assert_eq!(result.len(), 10000);

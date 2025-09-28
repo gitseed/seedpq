@@ -18,10 +18,10 @@ pub fn get_insert_query() -> String {
 #[allow(dead_code)]
 pub fn setup_data() {
     let (s, r, _, _) = seedpq::connect("postgres:///example");
-    s.exec("TRUNCATE TABLE comments CASCADE", None).unwrap();
-    s.exec("TRUNCATE TABLE posts CASCADE", None).unwrap();
-    s.exec("TRUNCATE TABLE users CASCADE", None).unwrap();
-    s.exec(&get_insert_query(), None).unwrap();
+    s.exec("TRUNCATE TABLE comments CASCADE").unwrap();
+    s.exec("TRUNCATE TABLE posts CASCADE").unwrap();
+    s.exec("TRUNCATE TABLE users CASCADE").unwrap();
+    s.exec(&get_insert_query()).unwrap();
     assert!(r.get::<EmptyResult>().unwrap().next().is_none());
     assert!(r.get::<EmptyResult>().unwrap().next().is_none());
     assert!(r.get::<EmptyResult>().unwrap().next().is_none());

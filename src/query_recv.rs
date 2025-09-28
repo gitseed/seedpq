@@ -147,7 +147,10 @@ pub struct QueryReceiver<T> {
     pub(crate) current_chunk_row_total: usize,
 }
 
-impl <T>QueryReceiver<T> where for<'a> T: QueryResult<'a> {
+impl<T> QueryReceiver<T>
+where
+    for<'a> T: QueryResult<'a>,
+{
     pub fn one(mut self) -> Result<T, QueryError> {
         match self.next() {
             None => Err(QueryError::OutOfRowsError),

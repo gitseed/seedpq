@@ -21,8 +21,19 @@ pub enum PostgresRequest {
 impl RequestSender {
     /// Sends the query string to postgres to be executed.
     /// Whether the execution is successful or not, the result will be sent to the QueryReceiver.
-    /// If None is specified for chunk size, it will use a default chunk size.
-    pub fn exec(&self, query: &str, chunk_size: Option<usize>) -> Result<(), RequestSenderError> {
+    /// This function doesn't allow advanced options. If you'd like more control use exec_advanced.
+    pub fn exec(&self, query: &str) -> Result<(), RequestSenderError> {
+        self.exec_advanced(query, None)
+    }
+
+    /// Sends the query string to postgres to be executed.
+    /// Whether the execution is successful or not, the result will be sent to the QueryReceiver.
+    /// chunk_size will set the chunk size for chunked rows mode, None will use a default size.
+    pub fn exec_advanced(
+        &self,
+        query: &str,
+        chunk_size: Option<usize>,
+    ) -> Result<(), RequestSenderError> {
         const DEFAULT_CHUNK_SIZE: std::ffi::c_int = 100;
 
         let chunk_size: std::ffi::c_int = match chunk_size {
