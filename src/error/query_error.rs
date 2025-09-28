@@ -30,7 +30,7 @@ pub enum QueryError {
     },
     #[error("connection error while executing query:\n{query}\n{msg}")]
     ConnectionError { query: String, msg: String },
-    #[error("error converting query results into a rust type, query:\n{query}")]
+    #[error("error: {e}\nquery:\n{query}")]
     QueryDataError {
         #[source]
         e: QueryResultError,
@@ -38,6 +38,6 @@ pub enum QueryError {
     },
     #[error("PGresult had bad status {status}, for query:\n{query}")]
     ResultStatusError { status: &'static str, query: String },
-    #[error("you tried to fetch a row with one, but there were no more rows to fetch")]
-    OutOfRowsError,
+    #[error("tried to fetch one row, but out of rows, for query:\n{query}")]
+    OutOfRowsError { query: String },
 }

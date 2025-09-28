@@ -9,4 +9,5 @@ pub use postgres_data_error::BadBooleanError;
 pub use postgres_data_error::UnexpectedNullError;
 pub use query_error::QueryError;
 pub use query_recv_error::QueriesReceiverError;
+pub use query_result_error::NotEmpty;
 pub use query_result_error::QueryResultError;

@@ -1,21 +1,25 @@
 use crate::PostgresRow;
-use crate::error::QueryResultError;
 use crate::query_result::QueryResult;
+
+use crate::error::NotEmpty;
+use crate::error::QueryResultError;
 
 use hybrid_array::Array;
 use hybrid_array::typenum::U0;
 
-pub struct EmptyResult;
-
-impl QueryResult<'_> for EmptyResult {
+impl QueryResult<'_> for () {
     type Columns = U0;
     const COLUMN_NAMES: Option<Array<&'static str, Self::Columns>> = Some(Array([]));
 }
 
-impl TryFrom<PostgresRow<'_, U0>> for EmptyResult {
+impl TryFrom<PostgresRow<'_, U0>> for () {
     type Error = QueryResultError;
 
     fn try_from(_: PostgresRow<'_, U0>) -> Result<Self, Self::Error> {
-        unreachable!()
+        Err(QueryResultError {
+            e: Box::new(NotEmpty),
+            t: std::any::type_name::<()>(),
+            column: 0,
+        })
     }
 }

@@ -1,5 +1,3 @@
-use seedpq::EmptyResult;
-
 #[allow(dead_code)]
 pub fn get_insert_query() -> String {
     const TIMES: usize = 10000;
@@ -22,8 +20,8 @@ pub fn setup_data() {
     s.exec("TRUNCATE TABLE posts CASCADE").unwrap();
     s.exec("TRUNCATE TABLE users CASCADE").unwrap();
     s.exec(&get_insert_query()).unwrap();
-    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
-    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
-    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
-    assert!(r.get::<EmptyResult>().unwrap().next().is_none());
+    r.get().unwrap().none().unwrap();
+    r.get().unwrap().none().unwrap();
+    r.get().unwrap().none().unwrap();
+    r.get().unwrap().none().unwrap();
 }

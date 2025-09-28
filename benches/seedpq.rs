@@ -1,6 +1,6 @@
 use criterion::{Bencher, Criterion, criterion_group, criterion_main};
 
-use seedpq::{EmptyResult, QueryReceiver, QueryResult};
+use seedpq::{QueryReceiver, QueryResult};
 
 #[path = "common/common.rs"]
 mod common;
@@ -19,7 +19,7 @@ pub fn bench_trivial_seedpq(b: &mut Bencher) {
             common::setup_data();
             let (s, r, _, _) = seedpq::connect("postgres:///example");
             s.exec("select version()").unwrap();
-            r.get::<EmptyResult>().unwrap();
+            r.get::<String>().unwrap().one().unwrap();
             (s, r)
         },
         |(s, r)| {

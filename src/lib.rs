@@ -6,7 +6,6 @@ mod raw;
 // Safe modules.
 mod connection;
 mod datatypes;
-mod empty_result;
 mod error;
 mod info;
 mod notice;
@@ -26,7 +25,6 @@ pub use error::QueryResultError;
 
 pub use connection::connect;
 
-pub use empty_result::EmptyResult;
 pub use postgres_data::PostgresData;
 pub use postgres_row::PostgresRow;
 pub use query_recv::QueryReceiver;

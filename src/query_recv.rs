@@ -153,15 +153,24 @@ where
 {
     pub fn one(mut self) -> Result<T, QueryError> {
         match self.next() {
-            None => Err(QueryError::OutOfRowsError),
+            None => Err(QueryError::OutOfRowsError { query: self.query }),
             Some(s) => s,
         }
     }
-    // pub fn all(self) -> Result<Vec<T>, QueryError> {
-    //     self.collect::<Result<Vec<T>, QueryError>>()
-    // }
 
     pub fn all<B: FromIterator<T>>(self) -> Result<B, QueryError> {
         self.collect::<Result<B, QueryError>>()
+    }
+}
+
+impl QueryReceiver<()> {
+    pub fn none(mut self) -> Result<(), QueryError> {
+        match self.next() {
+            None => Ok(()),
+            Some(s) => match s {
+                Err(e) => Err(e),
+                Ok(_) => unreachable!("conversion to () always returns an error"),
+            },
+        }
     }
 }
