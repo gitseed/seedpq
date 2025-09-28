@@ -1,3 +1,4 @@
+use super::single_value_result::single_value_result;
 use crate::error::UnexpectedNullError;
 use crate::postgres_data::PostgresData;
 
@@ -53,6 +54,20 @@ numeric_impl!(i128);
 numeric_impl!(f32);
 numeric_impl!(f64);
 
+single_value_result!(usize);
+single_value_result!(u8);
+single_value_result!(u16);
+single_value_result!(u32);
+single_value_result!(u64);
+single_value_result!(u128);
+single_value_result!(i8);
+single_value_result!(i16);
+single_value_result!(i32);
+single_value_result!(i64);
+single_value_result!(i128);
+single_value_result!(f32);
+single_value_result!(f64);
+
 nullable_numeric_impl!(usize);
 nullable_numeric_impl!(u8);
 nullable_numeric_impl!(u16);
@@ -66,3 +81,17 @@ nullable_numeric_impl!(i64);
 nullable_numeric_impl!(i128);
 nullable_numeric_impl!(f32);
 nullable_numeric_impl!(f64);
+
+single_value_result!(Option<usize>);
+single_value_result!(Option<u8>);
+single_value_result!(Option<u16>);
+single_value_result!(Option<u32>);
+single_value_result!(Option<u64>);
+single_value_result!(Option<u128>);
+single_value_result!(Option<i8>);
+single_value_result!(Option<i16>);
+single_value_result!(Option<i32>);
+single_value_result!(Option<i64>);
+single_value_result!(Option<i128>);
+single_value_result!(Option<f32>);
+single_value_result!(Option<f64>);

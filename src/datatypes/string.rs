@@ -1,13 +1,8 @@
-#![allow(unused_imports)]
-
 use crate::PostgresData;
-use crate::QueryResult;
 
-use crate::error::QueryResultError;
 use crate::error::UnexpectedNullError;
 
-use hybrid_array::Array;
-use hybrid_array::typenum::U1;
+use super::single_value_result::single_value_result;
 
 use std::error::Error;
 
@@ -21,6 +16,7 @@ impl TryInto<String> for PostgresData<'_> {
         }
     }
 }
+single_value_result!(String);
 
 impl TryInto<Option<String>> for PostgresData<'_> {
     type Error = Box<dyn Error>;
@@ -32,16 +28,4 @@ impl TryInto<Option<String>> for PostgresData<'_> {
         }
     }
 }
-
-// impl QueryResult<'_> for Option<String> {
-//     type Columns = U1;
-//     const COLUMN_NAMES: Option<Array<&'static str, Self::Columns>> = None;
-// }
-
-// impl TryFrom<Array<PostgresData<'_>, U1>> for Option<String> {
-//     type Error = QueryResultError;
-
-//     fn try_from(_: Array<PostgresData, U1>) -> Result<Self, Self::Error> {
-//         todo!()
-//     }
-// }
+single_value_result!(Option<String>);

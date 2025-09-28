@@ -1,3 +1,4 @@
+use super::single_value_result::single_value_result;
 use crate::error::BadBooleanError;
 use crate::error::UnexpectedNullError;
 use crate::postgres_data::PostgresData;
@@ -21,6 +22,7 @@ impl TryInto<bool> for PostgresData<'_> {
         }
     }
 }
+single_value_result!(bool);
 
 impl TryInto<Option<bool>> for PostgresData<'_> {
     type Error = Box<dyn Error>;
@@ -39,3 +41,4 @@ impl TryInto<Option<bool>> for PostgresData<'_> {
         }
     }
 }
+single_value_result!(Option<bool>);
