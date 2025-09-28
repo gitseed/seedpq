@@ -30,6 +30,8 @@ pub use postgres_row::PostgresRow;
 pub use query_recv::QueryReceiver;
 pub use query_result::QueryResult;
 
+pub use datatypes::PostgresTimestamp;
+
 // Re export hybrid_array, so that it can be used in derive macros.
 pub use hybrid_array;
 
