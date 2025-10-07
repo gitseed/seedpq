@@ -11,7 +11,7 @@ macro_rules! single_value_result {
             fn try_from(
                 value: crate::PostgresRow<::hybrid_array::typenum::U1>,
             ) -> Result<Self, Self::Error> {
-                let value: Result<$t, Box<dyn Error>> = value.0[0].try_into();
+                let value: Result<$t, Box<dyn Error + Send + Sync>> = value.0[0].try_into();
                 match value {
                     Ok(result) => Ok(result),
                     Err(e) => Err(crate::QueryResultError {

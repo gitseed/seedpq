@@ -16,6 +16,7 @@ tokio-postgres = "0.7.13"
 wtx = { git = "https://github.com/c410-f3r/wtx.git", features = ["postgres", "getrandom", "tokio"] }
 rand_chacha = { features = ["os_rng"], version = "0.9" }
 postgres = "0.19.10"
+anyhow = "1.0.100"
 
 [build-dependencies]
 pkg-config = "0.3.32"

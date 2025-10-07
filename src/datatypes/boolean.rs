@@ -6,7 +6,7 @@ use crate::postgres_data::PostgresData;
 use std::error::Error;
 
 impl TryFrom<PostgresData<'_>> for bool {
-    type Error = Box<dyn Error>;
+    type Error = Box<dyn Error + Send + Sync>;
     fn try_from(value: PostgresData) -> Result<Self, Self::Error> {
         match value.0 {
             None => Err(Box::new(UnexpectedNullError)),
@@ -24,7 +24,7 @@ impl TryFrom<PostgresData<'_>> for bool {
 single_value_result!(bool);
 
 impl TryFrom<PostgresData<'_>> for Option<bool> {
-    type Error = Box<dyn Error>;
+    type Error = Box<dyn Error + Send + Sync>;
     fn try_from(value: PostgresData) -> Result<Self, Self::Error> {
         match value.0 {
             None => Ok(None),

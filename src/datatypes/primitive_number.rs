@@ -7,7 +7,7 @@ use std::error::Error;
 macro_rules! numeric_impl {
     ($num_type:ty) => {
         impl TryFrom<PostgresData<'_>> for $num_type {
-            type Error = Box<dyn Error>;
+            type Error = Box<dyn Error + Send + Sync>;
             fn try_from(value: PostgresData<'_>) -> Result<Self, Self::Error> {
                 match value.0 {
                     None => Err(Box::new(UnexpectedNullError)),
@@ -24,7 +24,7 @@ macro_rules! numeric_impl {
 macro_rules! nullable_numeric_impl {
     ($num_type:ty) => {
         impl TryFrom<PostgresData<'_>> for Option<$num_type> {
-            type Error = Box<dyn Error>;
+            type Error = Box<dyn Error + Send + Sync>;
             fn try_from(value: PostgresData<'_>) -> Result<Self, Self::Error> {
                 match value.0 {
                     None => Ok(None),
