@@ -9,7 +9,7 @@ libpq based rust postgres library.
 ## Disadvantages of seedpq compared to other rust postgres libraries
 
 * seedpq is wildly unfinished and is missing a bunch of core functionality.
-* seedpq is maintained by myself, Paul Dejean, who currently works at Civitas Learning, and who maintains this project in their individual capacity in their free time. Other rust postgres libraries generally have more maintainers who have more time to devote to their projects.
+* seedpq is maintained by myself, Paul Dejean, who maintains this project in their individual capacity in their free time. Other rust postgres libraries generally have more maintainers who have more time to devote to their projects.
 * seedpq uses unsafe rust, because it utilizes a C library. This means there's no way to programatically guarantee the safety of the code. Of course I will aim to make the code safe, but I'm human so it's possible for me to make mistakes.
 * seedpq is primarily written to help me write gitseed, and its patterns might be inconvenient for someone who has different postgres usage patterns.
 * seedpq is not widely used, and isn't used in production anywhere I know of. Other postgres libraries are likely to be far more "battle tested."
